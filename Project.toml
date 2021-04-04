@@ -3,6 +3,9 @@ uuid = "b95d5a08-c8f5-47b1-aeb6-a5656de34941"
 authors = ["Wimmerer <wrkimmerer@outlook.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+SSGraphBLAS_jll = "7ed9a814-9cab-54e9-8e9e-d9e95b4d61b1"
+
 [compat]
 julia = "1"
 
