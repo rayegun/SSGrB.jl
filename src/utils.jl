@@ -40,3 +40,4 @@ function splitconstant(str)
 end
 
 isGxB(name) = name[1:3] == "GxB"
+

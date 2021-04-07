@@ -3,7 +3,8 @@ Wrapper for Tim Davis' SuiteSparse:GraphBLAS. Originally forked from [SuiteSpars
 
 ## TODO:
 - [x] Each built-in semiring/binary op/unary op/monoid should have its own type for dispatch purposes.
-- [ ] Context and Sequence
+- [x] Context and Sequence
+    - [ ] GrB_error
 - [ ] Object Construction and Methods 
 - [ ] Select Op 
 - [ ] Monoid 
@@ -21,3 +22,5 @@ Wrapper for Tim Davis' SuiteSparse:GraphBLAS. Originally forked from [SuiteSpars
     - [ ] reduce
     - [ ] others
 - [ ] Import & Export
+- [ ] User Defined Types
+- [ ] Prep for CUDA Support

@@ -11,6 +11,7 @@ struct GrB_ALL_Type <: Abstract_GrB_Type
     p::Ptr{Cvoid}
 end
 show(io::IO, ::GrB_ALL_Type) = print("GrB_ALL")
+
 function load_globaltypes()
 
         global BOOL = GrB_Type{Bool}("GrB_BOOL")
