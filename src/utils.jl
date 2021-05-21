@@ -53,9 +53,9 @@ end
 function load_global(str)
     x =
     try
-        dlsym(graphblas_lib, str)
-    catch
-        print("Symbol not available: " * str * "\n")
+        dlsym(SSGraphBLAS_jll.libgraphblas_handle, str)
+    catch e
+        print("Symbol not available: " * str * "\n $e")
         return C_NULL
     end
     return unsafe_load(cglobal(x, Ptr{Cvoid}))

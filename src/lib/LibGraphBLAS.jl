@@ -1,5 +1,5 @@
-module LibGraphBLAS
-
+module libgb
+import ..libgraphblas
 const GxB_FC32_t = ComplexF32
 
 const GxB_FC64_t = ComplexF32
@@ -44,8 +44,59 @@ function GrB_finalize()
     ccall((:GrB_finalize, libgraphblas), GrB_Info, ())
 end
 
-function GrB_getVersion(version, subversion)
+function GrB_getVersion()
+    version = Ref{Cuint}(0)
+    subversion = Ref{Cuint}(0)
     ccall((:GrB_getVersion, libgraphblas), GrB_Info, (Ptr{Cuint}, Ptr{Cuint}), version, subversion)
+    return version, subversion
+end
+
+@enum GrB_Desc_Field::UInt32 begin
+    GrB_OUTP = 0
+    GrB_MASK = 1
+    GrB_INP0 = 2
+    GrB_INP1 = 3
+    GxB_DESCRIPTOR_NTHREADS = 5
+    GxB_DESCRIPTOR_CHUNK = 7
+    GxB_DESCRIPTOR_GPU_CONTROL = 21
+    GxB_DESCRIPTOR_GPU_CHUNK = 22
+    GxB_AxB_METHOD = 1000
+    GxB_SORT = 35
+end
+
+@enum GrB_Desc_Value::UInt32 begin
+    GxB_DEFAULT = 0
+    GrB_REPLACE = 1
+    GrB_COMP = 2
+    # GrB_SCMP = 2
+    GrB_STRUCTURE = 4
+    GrB_TRAN = 3
+    GxB_GPU_ALWAYS = 2001
+    GxB_GPU_NEVER = 2002
+    GxB_AxB_GUSTAVSON = 1001
+    GxB_AxB_DOT = 1003
+    GxB_AxB_HASH = 1004
+    GxB_AxB_SAXPY = 1005
+end
+
+mutable struct GB_Descriptor_opaque end
+
+const GrB_Descriptor = Ptr{GB_Descriptor_opaque}
+
+function GrB_Descriptor_new(descriptor)
+    ccall((:GrB_Descriptor_new, libgraphblas), GrB_Info, (Ptr{GrB_Descriptor},), descriptor)
+end
+
+function GrB_Descriptor_set(desc, field, val)
+    ccall((:GrB_Descriptor_set, libgraphblas), GrB_Info, (GrB_Descriptor, GrB_Desc_Field, GrB_Desc_Value), desc, field, val)
+end
+
+function GxB_Descriptor_get(val, desc, field)
+    ccall((:GxB_Descriptor_get, libgraphblas), GrB_Info, (Ptr{GrB_Desc_Value}, GrB_Descriptor, GrB_Desc_Field), val, desc, field)
+end
+
+function GrB_Descriptor_free(descriptor)
+    ccall((:GrB_Descriptor_free, libgraphblas), GrB_Info, (Ptr{GrB_Descriptor},), descriptor)
 end
 
 mutable struct GB_Type_opaque end
@@ -293,8 +344,10 @@ mutable struct GB_Scalar_opaque end
 
 const GxB_Scalar = Ptr{GB_Scalar_opaque}
 
-function GxB_Scalar_new(s, type)
+function GxB_Scalar_new(type)
+    s = Ref{GxB_Scalar}()
     ccall((:GxB_Scalar_new, libgraphblas), GrB_Info, (Ptr{GxB_Scalar}, GrB_Type), s, type)
+    return s[]
 end
 
 function GxB_Scalar_dup(s, t)
@@ -953,52 +1006,20 @@ function GrB_Matrix_extractTuples_UDT(I, J, X, nvals, A)
     ccall((:GrB_Matrix_extractTuples_UDT, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cvoid}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
 end
 
-@enum GrB_Desc_Field::UInt32 begin
-    GrB_OUTP = 0
-    GrB_MASK = 1
-    GrB_INP0 = 2
-    GrB_INP1 = 3
-    GxB_DESCRIPTOR_NTHREADS = 5
-    GxB_DESCRIPTOR_CHUNK = 7
-    GxB_DESCRIPTOR_GPU_CONTROL = 21
-    GxB_DESCRIPTOR_GPU_CHUNK = 22
-    GxB_AxB_METHOD = 1000
-    GxB_SORT = 35
+function GxB_Matrix_concat(C, Tiles, m, n, desc)
+    ccall((:GxB_Matrix_concat, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Matrix}, GrB_Index, GrB_Index, GrB_Descriptor), C, Tiles, m, n, desc)
 end
 
-@enum GrB_Desc_Value::UInt32 begin
-    GxB_DEFAULT = 0
-    GrB_REPLACE = 1
-    GrB_COMP = 2
-    # GrB_SCMP = 2
-    GrB_STRUCTURE = 4
-    GrB_TRAN = 3
-    GxB_GPU_ALWAYS = 2001
-    GxB_GPU_NEVER = 2002
-    GxB_AxB_GUSTAVSON = 1001
-    GxB_AxB_DOT = 1003
-    GxB_AxB_HASH = 1004
-    GxB_AxB_SAXPY = 1005
+function GxB_Matrix_split(Tiles, m, n, Tile_nrows, Tile_ncols, A, desc)
+    ccall((:GxB_Matrix_split, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Index, GrB_Index, Ptr{GrB_Index}, Ptr{GrB_Index}, GrB_Matrix, GrB_Descriptor), Tiles, m, n, Tile_nrows, Tile_ncols, A, desc)
 end
 
-mutable struct GB_Descriptor_opaque end
-
-const GrB_Descriptor = Ptr{GB_Descriptor_opaque}
-
-function GrB_Descriptor_new(descriptor)
-    ccall((:GrB_Descriptor_new, libgraphblas), GrB_Info, (Ptr{GrB_Descriptor},), descriptor)
+function GxB_Matrix_diag(C, v, k, desc)
+    ccall((:GxB_Matrix_diag, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, Int64, GrB_Descriptor), C, v, k, desc)
 end
 
-function GrB_Descriptor_set(desc, field, val)
-    ccall((:GrB_Descriptor_set, libgraphblas), GrB_Info, (GrB_Descriptor, GrB_Desc_Field, GrB_Desc_Value), desc, field, val)
-end
-
-function GxB_Descriptor_get(val, desc, field)
-    ccall((:GxB_Descriptor_get, libgraphblas), GrB_Info, (Ptr{GrB_Desc_Value}, GrB_Descriptor, GrB_Desc_Field), val, desc, field)
-end
-
-function GrB_Descriptor_free(descriptor)
-    ccall((:GrB_Descriptor_free, libgraphblas), GrB_Info, (Ptr{GrB_Descriptor},), descriptor)
+function GxB_Vector_diag(v, A, k, desc)
+    ccall((:GxB_Vector_diag, libgraphblas), GrB_Info, (GrB_Vector, GrB_Matrix, Int64, GrB_Descriptor), v, A, k, desc)
 end
 
 @enum GxB_Option_Field::UInt32 begin
@@ -1021,6 +1042,9 @@ end
     GxB_GLOBAL_NTHREADS = 5
     GxB_GLOBAL_CHUNK = 7
     GxB_BURBLE = 99
+    GxB_PRINTF = 101
+    GxB_FLUSH = 102
+    GxB_MEMORY_POOL = 103
     GxB_SPARSITY_STATUS = 33
     GxB_IS_HYPER = 6
     GxB_SPARSITY_CONTROL = 32
@@ -1903,92 +1927,92 @@ function GxB_Scalar_fprint(s, name, pr, f)
     ccall((:GxB_Scalar_fprint, libgraphblas), GrB_Info, (GxB_Scalar, Ptr{Cchar}, GxB_Print_Level, Ptr{Libc.FILE}), s, name, pr, f)
 end
 
-function GxB_Matrix_import_CSR(A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, jumbled, desc)
-    ccall((:GxB_Matrix_import_CSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, jumbled, desc)
+function GxB_Matrix_import_CSR(A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, is_uniform, jumbled, desc)
+    ccall((:GxB_Matrix_import_CSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, Bool, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, is_uniform, jumbled, desc)
 end
 
-function GxB_Matrix_import_CSC(A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, jumbled, desc)
-    ccall((:GxB_Matrix_import_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, jumbled, desc)
+function GxB_Matrix_import_CSC(A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, is_uniform, jumbled, desc)
+    ccall((:GxB_Matrix_import_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, Bool, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, is_uniform, jumbled, desc)
 end
 
-function GxB_Matrix_import_HyperCSR(A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, nvec, jumbled, desc)
-    ccall((:GxB_Matrix_import_HyperCSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, nvec, jumbled, desc)
+function GxB_Matrix_import_HyperCSR(A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, is_uniform, nvec, jumbled, desc)
+    ccall((:GxB_Matrix_import_HyperCSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, is_uniform, nvec, jumbled, desc)
 end
 
-function GxB_Matrix_import_HyperCSC(A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, nvec, jumbled, desc)
-    ccall((:GxB_Matrix_import_HyperCSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, nvec, jumbled, desc)
+function GxB_Matrix_import_HyperCSC(A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, is_uniform, nvec, jumbled, desc)
+    ccall((:GxB_Matrix_import_HyperCSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, is_uniform, nvec, jumbled, desc)
 end
 
-function GxB_Matrix_import_BitmapR(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
-    ccall((:GxB_Matrix_import_BitmapR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
+function GxB_Matrix_import_BitmapR(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
+    ccall((:GxB_Matrix_import_BitmapR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, Bool, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
 end
 
-function GxB_Matrix_import_BitmapC(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
-    ccall((:GxB_Matrix_import_BitmapC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
+function GxB_Matrix_import_BitmapC(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
+    ccall((:GxB_Matrix_import_BitmapC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, Bool, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
 end
 
-function GxB_Matrix_import_FullR(A, type, nrows, ncols, Ax, Ax_size, desc)
-    ccall((:GxB_Matrix_import_FullR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, desc)
+function GxB_Matrix_import_FullR(A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
+    ccall((:GxB_Matrix_import_FullR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
 end
 
-function GxB_Matrix_import_FullC(A, type, nrows, ncols, Ax, Ax_size, desc)
-    ccall((:GxB_Matrix_import_FullC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, desc)
+function GxB_Matrix_import_FullC(A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
+    ccall((:GxB_Matrix_import_FullC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, Bool, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
 end
 
-function GxB_Vector_import_CSC(v, type, n, vi, vx, vi_size, vx_size, nvals, jumbled, desc)
-    ccall((:GxB_Vector_import_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, Bool, GrB_Descriptor), v, type, n, vi, vx, vi_size, vx_size, nvals, jumbled, desc)
+function GxB_Vector_import_CSC(v, type, n, vi, vx, vi_size, vx_size, is_uniform, nvals, jumbled, desc)
+    ccall((:GxB_Vector_import_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, Bool, GrB_Index, Bool, GrB_Descriptor), v, type, n, vi, vx, vi_size, vx_size, is_uniform, nvals, jumbled, desc)
 end
 
-function GxB_Vector_import_Bitmap(v, type, n, vb, vx, vb_size, vx_size, nvals, desc)
-    ccall((:GxB_Vector_import_Bitmap, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, GrB_Index, GrB_Descriptor), v, type, n, vb, vx, vb_size, vx_size, nvals, desc)
+function GxB_Vector_import_Bitmap(v, type, n, vb, vx, vb_size, vx_size, is_uniform, nvals, desc)
+    ccall((:GxB_Vector_import_Bitmap, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Index, Bool, GrB_Index, GrB_Descriptor), v, type, n, vb, vx, vb_size, vx_size, is_uniform, nvals, desc)
 end
 
-function GxB_Vector_import_Full(v, type, n, vx, vx_size, desc)
-    ccall((:GxB_Vector_import_Full, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, GrB_Descriptor), v, type, n, vx, vx_size, desc)
+function GxB_Vector_import_Full(v, type, n, vx, vx_size, is_uniform, desc)
+    ccall((:GxB_Vector_import_Full, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, GrB_Type, GrB_Index, Ptr{Ptr{Cvoid}}, GrB_Index, Bool, GrB_Descriptor), v, type, n, vx, vx_size, is_uniform, desc)
 end
 
-function GxB_Matrix_export_CSR(A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, jumbled, desc)
-    ccall((:GxB_Matrix_export_CSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, jumbled, desc)
+function GxB_Matrix_export_CSR(A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, is_uniform, jumbled, desc)
+    ccall((:GxB_Matrix_export_CSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Aj, Ax, Ap_size, Aj_size, Ax_size, is_uniform, jumbled, desc)
 end
 
-function GxB_Matrix_export_CSC(A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, jumbled, desc)
-    ccall((:GxB_Matrix_export_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, jumbled, desc)
+function GxB_Matrix_export_CSC(A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, is_uniform, jumbled, desc)
+    ccall((:GxB_Matrix_export_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ai, Ax, Ap_size, Ai_size, Ax_size, is_uniform, jumbled, desc)
 end
 
-function GxB_Matrix_export_HyperCSR(A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, nvec, jumbled, desc)
-    ccall((:GxB_Matrix_export_HyperCSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, nvec, jumbled, desc)
+function GxB_Matrix_export_HyperCSR(A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, is_uniform, nvec, jumbled, desc)
+    ccall((:GxB_Matrix_export_HyperCSR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Aj, Ax, Ap_size, Ah_size, Aj_size, Ax_size, is_uniform, nvec, jumbled, desc)
 end
 
-function GxB_Matrix_export_HyperCSC(A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, nvec, jumbled, desc)
-    ccall((:GxB_Matrix_export_HyperCSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, nvec, jumbled, desc)
+function GxB_Matrix_export_HyperCSC(A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, is_uniform, nvec, jumbled, desc)
+    ccall((:GxB_Matrix_export_HyperCSC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ap, Ah, Ai, Ax, Ap_size, Ah_size, Ai_size, Ax_size, is_uniform, nvec, jumbled, desc)
 end
 
-function GxB_Matrix_export_BitmapR(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
-    ccall((:GxB_Matrix_export_BitmapR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
+function GxB_Matrix_export_BitmapR(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
+    ccall((:GxB_Matrix_export_BitmapR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
 end
 
-function GxB_Matrix_export_BitmapC(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
-    ccall((:GxB_Matrix_export_BitmapC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, nvals, desc)
+function GxB_Matrix_export_BitmapC(A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
+    ccall((:GxB_Matrix_export_BitmapC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ab, Ax, Ab_size, Ax_size, is_uniform, nvals, desc)
 end
 
-function GxB_Matrix_export_FullR(A, type, nrows, ncols, Ax, Ax_size, desc)
-    ccall((:GxB_Matrix_export_FullR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, desc)
+function GxB_Matrix_export_FullR(A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
+    ccall((:GxB_Matrix_export_FullR, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
 end
 
-function GxB_Matrix_export_FullC(A, type, nrows, ncols, Ax, Ax_size, desc)
-    ccall((:GxB_Matrix_export_FullC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, desc)
+function GxB_Matrix_export_FullC(A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
+    ccall((:GxB_Matrix_export_FullC, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), A, type, nrows, ncols, Ax, Ax_size, is_uniform, desc)
 end
 
-function GxB_Vector_export_CSC(v, type, n, vi, vx, vi_size, vx_size, nvals, jumbled, desc)
-    ccall((:GxB_Vector_export_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), v, type, n, vi, vx, vi_size, vx_size, nvals, jumbled, desc)
+function GxB_Vector_export_CSC(v, type, n, vi, vx, vi_size, vx_size, is_uniform, nvals, jumbled, desc)
+    ccall((:GxB_Vector_export_CSC, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{GrB_Index}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), v, type, n, vi, vx, vi_size, vx_size, is_uniform, nvals, jumbled, desc)
 end
 
-function GxB_Vector_export_Bitmap(v, type, n, vb, vx, vb_size, vx_size, nvals, desc)
-    ccall((:GxB_Vector_export_Bitmap, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GrB_Index}, GrB_Descriptor), v, type, n, vb, vx, vb_size, vx_size, nvals, desc)
+function GxB_Vector_export_Bitmap(v, type, n, vb, vx, vb_size, vx_size, is_uniform, nvals, desc)
+    ccall((:GxB_Vector_export_Bitmap, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{Int8}}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, GrB_Descriptor), v, type, n, vb, vx, vb_size, vx_size, is_uniform, nvals, desc)
 end
 
-function GxB_Vector_export_Full(v, type, n, vx, vx_size, desc)
-    ccall((:GxB_Vector_export_Full, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, GrB_Descriptor), v, type, n, vx, vx_size, desc)
+function GxB_Vector_export_Full(v, type, n, vx, vx_size, is_uniform, desc)
+    ccall((:GxB_Vector_export_Full, libgraphblas), GrB_Info, (Ptr{GrB_Vector}, Ptr{GrB_Type}, Ptr{GrB_Index}, Ptr{Ptr{Cvoid}}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Descriptor), v, type, n, vx, vx_size, is_uniform, desc)
 end
 
 function GxB_cuda_malloc(size)
@@ -2005,17 +2029,17 @@ end
 
 # Skipping MacroDefinition: GB_PUBLIC extern
 
-const GxB_STDC_VERSION = __STDC_VERSION__
+#const GxB_STDC_VERSION = __STDC_VERSION__
 
 const GxB_IMPLEMENTATION_NAME = "SuiteSparse:GraphBLAS"
 
-const GxB_IMPLEMENTATION_DATE = "Jan 19, 2021"
+const GxB_IMPLEMENTATION_DATE = "May 13, 2021"
 
-const GxB_IMPLEMENTATION_MAJOR = 4
+const GxB_IMPLEMENTATION_MAJOR = 5
 
 const GxB_IMPLEMENTATION_MINOR = 0
 
-const GxB_IMPLEMENTATION_SUB = 3
+const GxB_IMPLEMENTATION_SUB = 4
 
 const GxB_SPEC_DATE = "Sept 25, 2019"
 
@@ -2025,31 +2049,31 @@ const GxB_SPEC_MINOR = 3
 
 const GxB_SPEC_SUB = 0
 
-# Skipping MacroDefinition: GxB_IMPLEMENTATION GxB_VERSION ( GxB_IMPLEMENTATION_MAJOR , GxB_IMPLEMENTATION_MINOR , GxB_IMPLEMENTATION_SUB )
+const GxB_IMPLEMENTATION = (GxB_IMPLEMENTATION_MAJOR, GxB_IMPLEMENTATION_MINOR, GxB_IMPLEMENTATION_SUB)
 
 # Skipping MacroDefinition: GxB_IMPLEMENTATION_ABOUT \
-"SuiteSparse:GraphBLAS, Timothy A. Davis, (c) 2017-2021, All Rights Reserved." \
-"\nhttp://suitesparse.com  Dept of Computer Sci. & Eng, Texas A&M University.\n"
+#"SuiteSparse:GraphBLAS, Timothy A. Davis, (c) 2017-2021, All Rights Reserved." \
+#"\nhttp://suitesparse.com  Dept of Computer Sci. & Eng, Texas A&M University.\n"
 
 # Skipping MacroDefinition: GxB_IMPLEMENTATION_LICENSE \
-"SuiteSparse:GraphBLAS, Timothy A. Davis, (c) 2017-2021, All Rights Reserved." \
-"\nLicensed under the Apache License, Version 2.0 (the \"License\"); you may\n" \
-"not use SuiteSparse:GraphBLAS except in compliance with the License.  You\n" \
-"may obtain a copy of the License at\n\n" \
-"    http://www.apache.org/licenses/LICENSE-2.0\n\n" \
-"Unless required by applicable law or agreed to in writing, software\n" \
-"distributed under the License is distributed on an \"AS IS\" BASIS,\n" \
-"WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" \
-"See the License for the specific language governing permissions and\n" \
-"limitations under the License.\n"
+#"SuiteSparse:GraphBLAS, Timothy A. Davis, (c) 2017-2021, All Rights Reserved." \
+#"\nLicensed under the Apache License, Version 2.0 (the \"License\"); you may\n" \
+#"not use SuiteSparse:GraphBLAS except in compliance with the License.  You\n" \
+#"may obtain a copy of the License at\n\n" \
+#"    http://www.apache.org/licenses/LICENSE-2.0\n\n" \
+#"Unless required by applicable law or agreed to in writing, software\n" \
+#"distributed under the License is distributed on an \"AS IS\" BASIS,\n" \
+#"WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n" \
+#"See the License for the specific language governing permissions and\n" \
+#"limitations under the License.\n"
 
-# Skipping MacroDefinition: GxB_SPEC_VERSION GxB_VERSION ( GxB_SPEC_MAJOR , GxB_SPEC_MINOR , GxB_SPEC_SUB )
+const GxB_SPEC_VERSION = (GxB_SPEC_MAJOR, GxB_SPEC_MINOR, GxB_SPEC_SUB)
 
 # Skipping MacroDefinition: GxB_SPEC_ABOUT \
-"GraphBLAS C API, by Aydin Buluc, Timothy Mattson, Scott McMillan,\n" \
-"Jose' Moreira, Carl Yang, and Benjamin Brock.  Based on 'GraphBLAS\n" \
-"Mathematics by Jeremy Kepner.  See also 'Graph Algorithms in the Language\n" \
-"of Linear Algebra,' edited by J. Kepner and J. Gilbert, SIAM, 2011.\n"
+#"GraphBLAS C API, by Aydin Buluc, Timothy Mattson, Scott McMillan,\n" \
+#"Jose' Moreira, Carl Yang, and Benjamin Brock.  Based on 'GraphBLAS\n" \
+#"Mathematics by Jeremy Kepner.  See also 'Graph Algorithms in the Language\n" \
+#"of Linear Algebra,' edited by J. Kepner and J. Gilbert, SIAM, 2011.\n"
 
 const GxB_INDEX_MAX = GrB_Index(Culonglong(1) << 60)
 
@@ -2081,15 +2105,15 @@ const GxB_ANY_SPARSITY = GxB_HYPERSPARSE + GxB_SPARSE + GxB_BITMAP + GxB_FULL
 
 const GxB_AUTO_SPARSITY = GxB_ANY_SPARSITY
 
-const GrB_NULL = NULL
+const GrB_NULL = C_NULL
 
-const GrB_INVALID_HANDLE = NULL
+const GrB_INVALID_HANDLE = C_NULL
 
-# Skipping MacroDefinition: GxB_RANGE ( INT64_MAX )
+const GxB_RANGE = typemax(Int64)
 
-const GxB_STRIDE = INT64_MAX - 1
+const GxB_STRIDE = typemax(Int64) - 1
 
-const GxB_BACKWARDS = INT64_MAX - 2
+const GxB_BACKWARDS = typemax(Int64) - 2
 
 const GxB_BEGIN = 0
 

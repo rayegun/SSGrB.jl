@@ -5,7 +5,6 @@ module_name = "LibGraphBLAS"
 output_file_path = "./LibGraphBLAS.jl"
 #epilogue_file_path = "./epilogue.jl"
 use_julia_native_enum_type = true
-
 [codegen]
 opaque_as_mutable_struct = true
 

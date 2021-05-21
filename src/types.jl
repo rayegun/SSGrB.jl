@@ -1,8 +1,7 @@
 const valid_types = Union{Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32, Int64, UInt64, Float32, Float64}
 
 struct GrB_Type{T} <: Abstract_GrB_Type
-    p::Ptr{Cvoid}
-    
+    p::libgb.GrB_Type
 end
 GrB_Type{T}(name::AbstractString) where {T<:valid_types} = GrB_Type{T}(load_global(name))
 show(io::IO, ::GrB_Type{T}) where T = print("GrB_Type{" * string(T) * "}")

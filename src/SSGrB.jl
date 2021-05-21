@@ -1,35 +1,32 @@
 module SSGrB
-
-using Libdl: dlopen, dlsym
-using SSGraphBLAS_jll: libgraphblas
-using CEnum
+using Libdl: dlsym
+using SSGraphBLAS_jll
+include("lib/LibGraphBLAS.jl")
+using .libgb
 include("abstracts.jl")
-include("enums.jl")
-include("exceptions.jl")
+include("Containers.jl")
+using .Containers
 include("utils.jl")
 include("types.jl")
-include("unaryops.jl")
-include("binaryops.jl")
 include("monoids.jl")
-include("selectops.jl")
+using .Monoids
+include("binaryops.jl")
+using .BinaryOps
+include("unaryops.jl")
+using .UnaryOps
 include("semirings.jl")
-include("context.jl")
-
-graphblas_lib = C_NULL
-
+using .Semirings
+include("selectops.jl")
+using .SelectOps
+#include("scalar.jl")
+#include("vector.jl")
 function __init__()
-    global graphblas_lib = dlopen(libgraphblas; throw_error=false)
-
-    loadunaryops()
-    loadbinaryops()
-    loadmonoids()
+    createunaryops()
+    createbinaryops()
+    createmonoids()
     loadselectops()
-    loadsemirings()
+    createsemirings()
     load_globaltypes()
-
-    GxB_init(GrB_BLOCKING)
+    libgb.GxB_init(libgb.GrB_NONBLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
 end
-
-
-
 end
