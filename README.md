@@ -1,5 +1,7 @@
 # SSGrB
-Wrapper for Tim Davis' SuiteSparse:GraphBLAS. Originally forked from [SuiteSparseGraphBLAS.jl](https://github.com/abhinavmehndiratta/SuiteSparseGraphBLAS.jl) by Abhinav Mehndiratta. Significant inspiration was taken from that repository and its forks, but most code is being rewritten.
+Wrapper for Tim Davis' SuiteSparse:GraphBLAS. Originally forked from [SuiteSparseGraphBLAS.jl](https://github.com/abhinavmehndiratta/SuiteSparseGraphBLAS.jl) by Abhinav Mehndiratta. Significant inspiration was taken from that repository and its forks, but most code is being rewritten. 
+
+This repo will be moved shortly to https://github.com/JuliaSparse/SuiteSparseGraphBLAS.jl
 
 ## TODO:
 - [x] Each built-in semiring/binary op/unary op/monoid should have its own type for dispatch purposes.
