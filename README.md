@@ -26,3 +26,4 @@ This repo will be moved shortly to https://github.com/JuliaSparse/SuiteSparseGra
 - [ ] Import & Export
 - [ ] User Defined Types
 - [ ] Prep for CUDA Support
+- [ ] Non-Blocking Mode
