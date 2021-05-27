@@ -1,9 +1,15 @@
-const valid_types = Union{Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32, Int64, UInt64, Float32, Float64}
+const valid_union = Union{Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32, Int64, UInt64, Float32, Float64, ComplexF32, ComplexF64}
+const valid_vec = [Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32, Int64, UInt64, Float32, Float64, ComplexF32, ComplexF64]
+const GxB_union = Union{ComplexF32, ComplexF64}
+const GxB_vec = [ComplexF32, ComplexF64]
 
 struct GrB_Type{T} <: Abstract_GrB_Type
     p::libgb.GrB_Type
 end
-GrB_Type{T}(name::AbstractString) where {T<:valid_types} = GrB_Type{T}(load_global(name))
+
+Base.unsafe_convert(::Type{libgb.GrB_Type}, s::Abstract_GrB_Type) = s.p
+
+GrB_Type{T}(name::AbstractString) where {T<:valid_union} = GrB_Type{T}(load_global(name))
 show(io::IO, ::GrB_Type{T}) where T = print("GrB_Type{" * string(T) * "}")
 
 struct GrB_ALL_Type <: Abstract_GrB_Type
@@ -24,6 +30,8 @@ function load_globaltypes()
         global UINT64 = GrB_Type{UInt64}("GrB_UINT64")
         global FP32 = GrB_Type{Float32}("GrB_FP32")
         global FP64 = GrB_Type{Float64}("GrB_FP64")
+        global FC32 = GrB_Type{ComplexF32}("GxB_FC64")
+        global FC64 = GrB_Type{ComplexF32}("GxB_FC64")
 
         global NULL = GrB_Type{Nothing}(C_NULL)
 

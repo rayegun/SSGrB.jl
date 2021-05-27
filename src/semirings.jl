@@ -41,25 +41,25 @@ function load(rig::Abstract_GrB_Semiring)
     positionals = ["GxB_MIN_FIRSTI", "GxB_MAX_FIRSTI", "GxB_ANY_FIRSTI", "GxB_PLUS_FIRSTI", "GxB_TIMES_FIRSTI", "GxB_MIN_FIRSTI1", "GxB_MAX_FIRSTI1", "GxB_ANY_FIRSTI1", "GxB_PLUS_FIRSTI1", "GxB_TIMES_FIRSTI1", "GxB_MIN_FIRSTJ", "GxB_MAX_FIRSTJ", "GxB_ANY_FIRSTJ", "GxB_PLUS_FIRSTJ", "GxB_TIMES_FIRSTJ", "GxB_MIN_FIRSTJ1", "GxB_MAX_FIRSTJ1", "GxB_ANY_FIRSTJ1", "GxB_PLUS_FIRSTJ1", "GxB_TIMES_FIRSTJ1", "GxB_MIN_SECONDI", "GxB_MAX_SECONDI", "GxB_ANY_SECONDI", "GxB_PLUS_SECONDI", "GxB_TIMES_SECONDI", "GxB_MIN_SECONDI1", "GxB_MAX_SECONDI1", "GxB_ANY_SECONDI1", "GxB_PLUS_SECONDI1", "GxB_TIMES_SECONDI1", "GxB_MIN_SECONDJ", "GxB_MAX_SECONDJ", "GxB_ANY_SECONDJ", "GxB_PLUS_SECONDJ", "GxB_TIMES_SECONDJ", "GxB_MIN_SECONDJ1", "GxB_MAX_SECONDJ1", "GxB_ANY_SECONDJ1", "GxB_PLUS_SECONDJ1", "GxB_TIMES_SECONDJ1"]
     name = rig.name
     if name ∈ booleans
-        rig.poitners[Bool] = load_global(name * "_BOOL")
+        rig.pointers[Bool] = load_global(name * "_BOOL")
     end
 
     if name ∈ integers
-        rig.poitners[Int8] =load_global(name * "_INT8")
-        rig.poitners[Int16] = load_global(name * "_INT16")
-        rig.poitners[Int32] = load_global(name * "_INT32")
-        rig.poitners[Int64] = load_global(name * "_INT64")
+        rig.pointers[Int8] =load_global(name * "_INT8")
+        rig.pointers[Int16] = load_global(name * "_INT16")
+        rig.pointers[Int32] = load_global(name * "_INT32")
+        rig.pointers[Int64] = load_global(name * "_INT64")
     end
 
     if name ∈ unsignedintegers
-        rig.poitners[UInt8] =load_global(name * "_UINT8")
-        rig.poitners[UInt16] = load_global(name * "_UINT16")
-        rig.poitners[UInt32] = load_global(name * "_UINT32")
-        rig.poitners[UInt64] = load_global(name * "_UINT64")
+        rig.pointers[UInt8] =load_global(name * "_UINT8")
+        rig.pointers[UInt16] = load_global(name * "_UINT16")
+        rig.pointers[UInt32] = load_global(name * "_UINT32")
+        rig.pointers[UInt64] = load_global(name * "_UINT64")
     end
 
     if name ∈ floats
-        rig.poitners[Float32] = load_global(name * "_FP32")
-        rig.poitners[Float64] = load_global(name * "_FP64")
+        rig.pointers[Float32] = load_global(name * "_FP32")
+        rig.pointers[Float64] = load_global(name * "_FP64")
     end
 end

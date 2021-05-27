@@ -1,6 +1,7 @@
 module SSGrB
 using Libdl: dlsym
 using SSGraphBLAS_jll
+import SparseArrays: nnz
 include("lib/LibGraphBLAS.jl")
 using .libgb
 include("abstracts.jl")
@@ -18,8 +19,8 @@ include("semirings.jl")
 using .Semirings
 include("selectops.jl")
 using .SelectOps
-#include("scalar.jl")
-#include("vector.jl")
+include("scalar.jl")
+include("vector.jl")
 function __init__()
     createunaryops()
     createbinaryops()
@@ -27,6 +28,6 @@ function __init__()
     loadselectops()
     createsemirings()
     load_globaltypes()
-    libgb.GxB_init(libgb.GrB_NONBLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
+    libgb.GxB_init(libgb.GrB_BLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
 end
 end
