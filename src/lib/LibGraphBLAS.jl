@@ -1,5 +1,6 @@
 module libgb
 import ..libgraphblas
+using ..SSGrB: suffix, towrappertype
 using MacroTools
 const GxB_FC32_t = ComplexF32
 
@@ -10,26 +11,15 @@ const GrB_Index = UInt64
 macro wraperror(code)
     MacroTools.@q begin
         info = $(esc(code))
-        if info == GrB_SUCCESS
-        elseif info == GrB_NO_VALUE
-            return nothing
+        if info == GrB_SUCCESS || info == GrB_NO_VALUE
         else
             error(string(info))
         end
     end
 end
 
-macro wrapextract(code)
-    MacroTools.@q begin
-        info = $(esc(code))
-        if info == GrB_SUCCESS
-        elseif info == GrB_NO_VALUE
-            return zero(x[])
-        else
-            error(string(info))
-        end
-    end
-end
+const valid_vec = [Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32,
+Int64, UInt64, Float32, Float64, ComplexF32, ComplexF64]
 
 @enum GrB_Info::UInt32 begin
     GrB_SUCCESS = 0
@@ -395,7 +385,7 @@ function GxB_Scalar_nvals(nvals, s)
 end
 
 function GxB_Scalar_nvals(s)
-nvals = Ref{GrB_Index}()
+    nvals = Ref{GrB_Index}()
     GxB_Scalar_nvals(nvals, s)
     return nvals[]
 end
@@ -587,7 +577,7 @@ function GxB_Scalar_extractElement_FC64(s)
     return x[]
 end
 
-function GxB_Scalar_extractElement_UDT(x, x, s)
+function GxB_Scalar_extractElement_UDT(x, s)
 ccall((:GxB_Scalar_extractElement_UDT, libgraphblas), GrB_Info, (Ptr{Cvoid}, GxB_Scalar), x, s)
 end
 
@@ -600,7 +590,7 @@ function GrB_Vector_new(v, type, n)
 end
 function GrB_Vector_new(type, n)
     v = Ref{GrB_Vector}()
-GrB_Vector_new(v, type, n)
+    GrB_Vector_new(v, type, n)
     return v[]
 end
 
@@ -648,233 +638,13 @@ function GrB_Vector_free(v)
     @wraperror ccall((:GrB_Vector_free, libgraphblas), GrB_Info, (Ptr{GrB_Vector},), v)
 end
 
-function GrB_Vector_build_BOOL(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_BOOL, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Bool}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_INT8(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_INT8, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Int8}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_UINT8(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_UINT8, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{UInt8}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_INT16(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_INT16, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Int16}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_UINT16(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_UINT16, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{UInt16}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_INT32(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_INT32, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Int32}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_UINT32(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_UINT32, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{UInt32}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_INT64(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_INT64, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Int64}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_UINT64(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_UINT64, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{UInt64}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_FP32(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_FP32, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Cfloat}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GrB_Vector_build_FP64(w, I, X, nvals, dup)
-    @wraperror ccall((:GrB_Vector_build_FP64, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Cdouble}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GxB_Vector_build_FC32(w, I, X, nvals, dup)
-    @wraperror ccall((:GxB_Vector_build_FC32, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{GxB_FC32_t}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
-function GxB_Vector_build_FC64(w, I, X, nvals, dup)
-    @wraperror ccall((:GxB_Vector_build_FC64, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{GxB_FC64_t}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
-end
-
 function GrB_Vector_build_UDT(w, I, X, nvals, dup)
     @wraperror ccall((:GrB_Vector_build_UDT, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{Cvoid}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
 end
 
-function GrB_Vector_setElement_BOOL(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_BOOL, libgraphblas), GrB_Info, (GrB_Vector, Bool, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_INT8(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_INT8, libgraphblas), GrB_Info, (GrB_Vector, Int8, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_UINT8(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_UINT8, libgraphblas), GrB_Info, (GrB_Vector, UInt8, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_INT16(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_INT16, libgraphblas), GrB_Info, (GrB_Vector, Int16, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_UINT16(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_UINT16, libgraphblas), GrB_Info, (GrB_Vector, UInt16, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_INT32(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_INT32, libgraphblas), GrB_Info, (GrB_Vector, Int32, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_UINT32(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_UINT32, libgraphblas), GrB_Info, (GrB_Vector, UInt32, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_INT64(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_INT64, libgraphblas), GrB_Info, (GrB_Vector, Int64, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_UINT64(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_UINT64, libgraphblas), GrB_Info, (GrB_Vector, UInt64, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_FP32(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_FP32, libgraphblas), GrB_Info, (GrB_Vector, Cfloat, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_setElement_FP64(w, x, i)
-    @wraperror ccall((:GrB_Vector_setElement_FP64, libgraphblas), GrB_Info, (GrB_Vector, Cdouble, GrB_Index), w, x, i)
-end
-
-function GxB_Vector_setElement_FC32(w, x, i)
-    @wraperror ccall((:GxB_Vector_setElement_FC32, libgraphblas), GrB_Info, (GrB_Vector, GxB_FC32_t, GrB_Index), w, x, i)
-end
-
-function GxB_Vector_setElement_FC64(w, x, i)
-    @wraperror ccall((:GxB_Vector_setElement_FC64, libgraphblas), GrB_Info, (GrB_Vector, GxB_FC64_t, GrB_Index), w, x, i)
-end
 
 function GrB_Vector_setElement_UDT(w, x, i)
     @wraperror ccall((:GrB_Vector_setElement_UDT, libgraphblas), GrB_Info, (GrB_Vector, Ptr{Cvoid}, GrB_Index), w, x, i)
-end
-
-function GrB_Vector_extractElement_BOOL(x, v, i)
-    ccall((:GrB_Vector_extractElement_BOOL, libgraphblas), GrB_Info, (Ptr{Bool}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_BOOL(v, i)
-    x=Ref{Bool}()
-    GrB_Vector_extractElement_BOOL(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_INT8(x, v, i)
-    ccall((:GrB_Vector_extractElement_INT8, libgraphblas), GrB_Info, (Ptr{Int8}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_INT8(v, i)
-    x = Ref{Int8}()
-    GrB_Vector_extractElement_INT8(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_UINT8(x, v, i)
-    ccall((:GrB_Vector_extractElement_UINT8, libgraphblas), GrB_Info, (Ptr{UInt8}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_UINT8(v, i)
-    x = Ref{UInt8}()
-    GrB_Vector_extractElement_UINT8(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_INT16(x, v, i)
-    ccall((:GrB_Vector_extractElement_INT16, libgraphblas), GrB_Info, (Ptr{Int16}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_INT16(v, i)
-    x = Ref{Int16}()
-    GrB_Vector_extractElement_INT16(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_UINT16(x, v, i)
-    ccall((:GrB_Vector_extractElement_UINT16, libgraphblas), GrB_Info, (Ptr{UInt16}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_UINT16(v, i)
-    x = Ref{UInt16}()
-    GrB_Vector_extractElement_UINT16(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_INT32(x, v, i)
-    ccall((:GrB_Vector_extractElement_INT32, libgraphblas), GrB_Info, (Ptr{Int32}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_INT32(v, i)
-    x = Ref{Int32}()
-    GrB_Vector_extractElement_INT32(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_UINT32(x, v, i)
-    ccall((:GrB_Vector_extractElement_UINT32, libgraphblas), GrB_Info, (Ptr{UInt32}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_UINT32(v, i)
-    x = Ref{UInt32}()
-    GrB_Vector_extractElement_UINT32(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_INT64(x, v, i)
-    ccall((:GrB_Vector_extractElement_INT64, libgraphblas), GrB_Info, (Ptr{Int64}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_INT64(v, i)
-    x = Ref{Int64}()
-    GrB_Vector_extractElement_INT64(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_UINT64(x, v, i)
-    ccall((:GrB_Vector_extractElement_UINT64, libgraphblas), GrB_Info, (Ptr{UInt64}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_UINT64(v, i)
-    x = Ref{UInt64}()
-    GrB_Vector_extractElement_UINT64(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_FP32(x, v, i)
-    ccall((:GrB_Vector_extractElement_FP32, libgraphblas), GrB_Info, (Ptr{Cfloat}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_FP32(v, i)
-    x = Ref{Float32}()
-    GrB_Vector_extractElement_FP32(x, v, i)
-    return x[]
-end
-
-function GrB_Vector_extractElement_FP64(x, v, i)
-    ccall((:GrB_Vector_extractElement_FP64, libgraphblas), GrB_Info, (Ptr{Cdouble}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GrB_Vector_extractElement_FP64(v, i)
-    x = Ref{Float64}()
-    GrB_Vector_extractElement_FP64(x, v, i)
-    return x[]
-end
-
-function GxB_Vector_extractElement_FC32(x, v, i)
-    ccall((:GxB_Vector_extractElement_FC32, libgraphblas), GrB_Info, (Ptr{GxB_FC32_t}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GxB_Vector_extractElement_FC32(v, i)
-        x = Ref{ComplexF32}()
-        GxB_Vector_extractElement_FC32(x, v, i)
-        return x[]
-end
-
-function GxB_Vector_extractElement_FC64(x, v, i)
-        ccall((:GxB_Vector_extractElement_FC64, libgraphblas), GrB_Info, (Ptr{GxB_FC64_t}, GrB_Vector, GrB_Index), x, v, i)
-end
-function GxB_Vector_extractElement_FC64(v, i)
-        x = Ref{ComplexF64}()
-        GxB_Vector_extractElement_FC64(x, v, i)
-        return x[]
 end
 
 function GrB_Vector_extractElement_UDT(x, v, i)
@@ -885,56 +655,69 @@ function GrB_Vector_removeElement(v, i)
     @wraperror ccall((:GrB_Vector_removeElement, libgraphblas), GrB_Info, (GrB_Vector, GrB_Index), v, i)
 end
 
-function GrB_Vector_extractTuples_BOOL(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_BOOL, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
+#Generate functions for Vector_extractElement and Vector_extractTuples.
+#Both have multiple forms, the second creates its own output( vectors) and returns them.
+for T ∈ valid_vec
+    if T ∈ [ComplexF32, ComplexF64]
+        prefix = :GxB
+    else
+        prefix = :GrB
+    end
+    type = towrappertype(T)
 
-function GrB_Vector_extractTuples_INT8(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_INT8, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Int8}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
+    # GrB_Vector_build_* Functions:
+    func = Symbol(prefix, :_Vector_build_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(w, I, X, nvals, dup)
+            I .-= 1 #Switch to 0-based indexing at ccall barrier
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{$type}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
+        end
+    end
 
-function GrB_Vector_extractTuples_UINT8(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_UINT8, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{UInt8}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
+    # GrB_Vector_setElement* Functions:
+    func = Symbol(prefix, :_Vector_setElement_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(w, x, i)
+            i -= 1 #Switch to 0-based indexing at ccall barrier
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Vector, $type, GrB_Index), w, x, i)
+        end
+    end
 
-function GrB_Vector_extractTuples_INT16(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_INT16, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Int16}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
+    # GrB_Vector_extractElement Functions:
+    func = Symbol(prefix, :_Vector_extractElement_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(x, v, i)
+            i -= 1 #Switch to 0-based indexing at ccall barrier
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{$type}, GrB_Vector, GrB_Index), x, v, i)
+        end
+        function $func(v, i)
+            x = Ref(zero($T))
+            return $func(x,v,i)
+        end
+    end
 
-function GrB_Vector_extractTuples_UINT16(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_UINT16, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{UInt16}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_INT32(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_INT32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Int32}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_UINT32(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_UINT32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{UInt32}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_INT64(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_INT64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Int64}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_UINT64(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_UINT64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{UInt64}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_FP32(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_FP32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Cfloat}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GrB_Vector_extractTuples_FP64(I, X, nvals, v)
-    @wraperror ccall((:GrB_Vector_extractTuples_FP64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{Cdouble}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GxB_Vector_extractTuples_FC32(I, X, nvals, v)
-    @wraperror ccall((:GxB_Vector_extractTuples_FC32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GxB_FC32_t}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
-end
-
-function GxB_Vector_extractTuples_FC64(I, X, nvals, v)
-    @wraperror ccall((:GxB_Vector_extractTuples_FC64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GxB_FC64_t}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
+    # GrB_Vector_extractTuples functions:
+    func = Symbol(prefix, :_Vector_extractTuples_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(I, X, nvals, v)
+            #I, X, and nvals are outputs
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{$T}, Ptr{GrB_Index}, GrB_Vector), I, X, nvals, v)
+            I .+= 1 #Back to 1-based indexing after ccall
+        end
+        function $func(v)
+            nvals = GrB_Vector_nvals(v)
+            I = Vector{GrB_Index}(undef, nvals)
+            X = Vector{$type}(undef, nvals)
+            nvals = Ref{GrB_Index}()
+            $func(I, X, nvals, v)
+            nvals[] == length(I) == length(X) || error("Mismatched Lengths")
+            return I, X
+        end
+    end
 end
 
 function GrB_Vector_extractTuples_UDT(I, X, nvals, v)
@@ -948,9 +731,19 @@ const GrB_Matrix = Ptr{GB_Matrix_opaque}
 function GrB_Matrix_new(A, type, nrows, ncols)
     @wraperror ccall((:GrB_Matrix_new, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Type, GrB_Index, GrB_Index), A, type, nrows, ncols)
 end
+function GrB_Matrix_new(type, nrows, ncols)
+    m = Ref{GrB_Matrix}()
+    GrB_Matrix_new(v, type, nrows, ncols)
+    return m[]
+end
 
 function GrB_Matrix_dup(C, A)
     @wraperror ccall((:GrB_Matrix_dup, libgraphblas), GrB_Info, (Ptr{GrB_Matrix}, GrB_Matrix), C, A)
+end
+function GrB_Matrix_dup(A)
+    C = Ref{GrB_Matrix}()
+    GrB_Matrix_dup
+    return C[]
 end
 
 function GrB_Matrix_clear(A)
@@ -960,185 +753,117 @@ end
 function GrB_Matrix_nrows(nrows, A)
     @wraperror ccall((:GrB_Matrix_nrows, libgraphblas), GrB_Info, (Ptr{GrB_Index}, GrB_Matrix), nrows, A)
 end
+function GrB_Matrix_nrows(A)
+    nrows = Ref{GrB_Index}()
+    GrB_Matrix_nrows(nrows, A)
+    return nrows[]
+end
 
 function GrB_Matrix_ncols(ncols, A)
     @wraperror ccall((:GrB_Matrix_ncols, libgraphblas), GrB_Info, (Ptr{GrB_Index}, GrB_Matrix), ncols, A)
+end
+function GrB_Matrix_ncols(A)
+    ncols = Ref{GrB_Index}()
+    GrB_Matrix_ncols(ncols, A)
+    return ncols[]
 end
 
 function GrB_Matrix_nvals(nvals, A)
     @wraperror ccall((:GrB_Matrix_nvals, libgraphblas), GrB_Info, (Ptr{GrB_Index}, GrB_Matrix), nvals, A)
 end
+function GrB_Matrix_nvals(A)
+    nvals = Ref{GrB_Index}()
+    GrB_Matrix_nvals(nvals, A)
+    return nvals[]
+end
 
 function GxB_Matrix_type(type, A)
     @wraperror ccall((:GxB_Matrix_type, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_Matrix), type, A)
+end
+function GxB_Matrix_type(A)
+    type = Ref{GrB_Type}()
+    GxB_Matrix_type(type, A)
+    return type[]
 end
 
 function GrB_Matrix_free(A)
     @wraperror ccall((:GrB_Matrix_free, libgraphblas), GrB_Info, (Ptr{GrB_Matrix},), A)
 end
 
-function GrB_Matrix_build_BOOL(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
+for T ∈ valid_vec
+    if T ∈ [ComplexF32, ComplexF64]
+        prefix = :GxB
+    else
+        prefix = :GrB
+    end
+    type = towrappertype(T)
 
-function GrB_Matrix_build_INT8(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_INT8, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int8}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
+    # GrB_Matrix_build_* Functions:
+    func = Symbol(prefix, :_Matrix_build_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(C, I, J, X, nvals, dup)
+            I .-= 1 #Switch to 0-based indexing at ccall barrier
+            J .-= 1
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{$type}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
+        end
+    end
 
-function GrB_Matrix_build_UINT8(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt8}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
+    # GrB_Matrix_setElement* Functions:
+    func = Symbol(prefix, :_Matrix_setElement_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(C, x, i, j)
+            i -= 1 #Switch to 0-based indexing at ccall barrier
+            j -= 1
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Matrix, $type, GrB_Index, GrB_Index), C, x, i, j)
+        end
+    end
 
-function GrB_Matrix_build_INT16(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_INT16, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int16}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
+    # GrB_Matrix_extractElement Functions:
+    func = Symbol(prefix, :_Matrix_extractElement_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(x, A, i, j)
+            i -= 1 #Switch to 0-based indexing at ccall barrier
+            j -= 1
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{$type}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
+        end
+        function $func(A, i, j)
+            x = Ref(zero($T))
+            return $func(x, A, i, j)
+        end
+    end
 
-function GrB_Matrix_build_UINT16(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt16}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_INT32(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_INT32, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int32}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_UINT32(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt32}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_INT64(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_INT64, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int64}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_UINT64(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt64}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_FP32(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_FP32, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cfloat}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GrB_Matrix_build_FP64(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GrB_Matrix_build_FP64, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cdouble}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GxB_Matrix_build_FC32(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GxB_Matrix_build_FC32, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GxB_FC32_t}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
-end
-
-function GxB_Matrix_build_FC64(C, I, J, X, nvals, dup)
-    @wraperror ccall((:GxB_Matrix_build_FC64, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GxB_FC64_t}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
+    # GrB_Matrix_extractTuples functions:
+    func = Symbol(prefix, :_Matrix_extractTuples_, suffix(T))
+    funcstr = string(func)
+    @eval begin
+        function $func(I, J, X, nvals, A)
+            #I, X, and nvals are outputs
+            @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{$type}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
+            I .+= 1 #Back to 1-based indexing after ccall
+            J .+= 1
+        end
+        function $func(A)
+            nvals = GrB_Matrix_nvals(v)
+            I = Vector{GrB_Index}(undef, nvals)
+            J = Vector{GrB_Index}(undef, nvals)
+            X = Vector{$type}(undef, nvals)
+            nvals = Ref{GrB_Index}()
+            $func(I, J, X, nvals, A)
+            nvals[] == length(I) == length(X) == length(J) || error("Mismatched Lengths")
+            return I, J, X
+        end
+    end
 end
 
 function GrB_Matrix_build_UDT(C, I, J, X, nvals, dup)
     @wraperror ccall((:GrB_Matrix_build_UDT, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cvoid}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
 end
 
-function GrB_Matrix_setElement_BOOL(C, x, i, j)
-@wraperror ccall((:GrB_Matrix_setElement_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, Bool, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_INT8(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_INT8, libgraphblas), GrB_Info, (GrB_Matrix, Int8, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_UINT8(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, UInt8, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_INT16(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_INT16, libgraphblas), GrB_Info, (GrB_Matrix, Int16, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_UINT16(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, UInt16, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_INT32(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_INT32, libgraphblas), GrB_Info, (GrB_Matrix, Int32, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_UINT32(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, UInt32, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_INT64(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_INT64, libgraphblas), GrB_Info, (GrB_Matrix, Int64, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_UINT64(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, UInt64, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_FP32(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_FP32, libgraphblas), GrB_Info, (GrB_Matrix, Cfloat, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_setElement_FP64(C, x, i, j)
-    @wraperror ccall((:GrB_Matrix_setElement_FP64, libgraphblas), GrB_Info, (GrB_Matrix, Cdouble, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GxB_Matrix_setElement_FC32(C, x, i, j)
-    @wraperror ccall((:GxB_Matrix_setElement_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GxB_FC32_t, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GxB_Matrix_setElement_FC64(C, x, i, j)
-    @wraperror ccall((:GxB_Matrix_setElement_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GxB_FC64_t, GrB_Index, GrB_Index), C, x, i, j)
-end
-
 function GrB_Matrix_setElement_UDT(C, x, i, j)
     @wraperror ccall((:GrB_Matrix_setElement_UDT, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{Cvoid}, GrB_Index, GrB_Index), C, x, i, j)
-end
-
-function GrB_Matrix_extractElement_BOOL(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_BOOL, libgraphblas), GrB_Info, (Ptr{Bool}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_INT8(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_INT8, libgraphblas), GrB_Info, (Ptr{Int8}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_UINT8(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_UINT8, libgraphblas), GrB_Info, (Ptr{UInt8}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_INT16(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_INT16, libgraphblas), GrB_Info, (Ptr{Int16}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_UINT16(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_UINT16, libgraphblas), GrB_Info, (Ptr{UInt16}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_INT32(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_INT32, libgraphblas), GrB_Info, (Ptr{Int32}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_UINT32(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_UINT32, libgraphblas), GrB_Info, (Ptr{UInt32}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_INT64(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_INT64, libgraphblas), GrB_Info, (Ptr{Int64}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_UINT64(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_UINT64, libgraphblas), GrB_Info, (Ptr{UInt64}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_FP32(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_FP32, libgraphblas), GrB_Info, (Ptr{Cfloat}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GrB_Matrix_extractElement_FP64(x, A, i, j)
-    @wraperror ccall((:GrB_Matrix_extractElement_FP64, libgraphblas), GrB_Info, (Ptr{Cdouble}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GxB_Matrix_extractElement_FC32(x, A, i, j)
-    @wraperror ccall((:GxB_Matrix_extractElement_FC32, libgraphblas), GrB_Info, (Ptr{GxB_FC32_t}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
-end
-
-function GxB_Matrix_extractElement_FC64(x, A, i, j)
-    @wraperror ccall((:GxB_Matrix_extractElement_FC64, libgraphblas), GrB_Info, (Ptr{GxB_FC64_t}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
 end
 
 function GrB_Matrix_extractElement_UDT(x, A, i, j)
@@ -1147,58 +872,6 @@ end
 
 function GrB_Matrix_removeElement(C, i, j)
     @wraperror ccall((:GrB_Matrix_removeElement, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Index, GrB_Index), C, i, j)
-end
-
-function GrB_Matrix_extractTuples_BOOL(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_BOOL, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Bool}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_INT8(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_INT8, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int8}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_UINT8(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_UINT8, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt8}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_INT16(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_INT16, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int16}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_UINT16(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_UINT16, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt16}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_INT32(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_INT32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int32}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_UINT32(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_UINT32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt32}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_INT64(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_INT64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Int64}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_UINT64(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_UINT64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{UInt64}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_FP32(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_FP32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cfloat}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GrB_Matrix_extractTuples_FP64(I, J, X, nvals, A)
-    @wraperror ccall((:GrB_Matrix_extractTuples_FP64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{Cdouble}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GxB_Matrix_extractTuples_FC32(I, J, X, nvals, A)
-    @wraperror ccall((:GxB_Matrix_extractTuples_FC32, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GxB_FC32_t}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-end
-
-function GxB_Matrix_extractTuples_FC64(I, J, X, nvals, A)
-    @wraperror ccall((:GxB_Matrix_extractTuples_FC64, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{GxB_FC64_t}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
 end
 
 function GrB_Matrix_extractTuples_UDT(I, J, X, nvals, A)

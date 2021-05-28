@@ -30,6 +30,38 @@ function suffix(T::DataType)
     end
 end
 
+function towrappertype(T::DataType)
+    if T == Bool
+        return :Bool
+    elseif T == Int8
+        return :Int8
+    elseif T == UInt8
+        return :UInt8
+    elseif T == Int16
+        return :Int16
+    elseif T == UInt16
+        return :UInt16
+    elseif T == Int32
+        return :Int32
+    elseif T == UInt32
+        return :UInt32
+    elseif T == Int64
+        return :Int64
+    elseif T == UInt64
+        return :UInt64
+    elseif  T == Float32
+        return :Cfloat
+    elseif T == Float64
+        return :Cdouble
+    elseif T == ComplexF32
+        return :GxB_FC32_t
+    elseif T == ComplexF64
+        return :GxB_FC64_t
+    else
+        error("Not a valid GrB data type")
+    end
+end
+
 grb_ptr(x::Abstract_GrB_Struct) = x.p
 
 function toGrB_Type(T::DataType)

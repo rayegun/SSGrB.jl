@@ -16,12 +16,6 @@ Base.unsafe_convert(::Type{libgb.GrB_Vector}, v::GBVector) = v.p
 
 Base.copy(v::GBVector{T}) where {T} = GBVector{T}(v.p)
 
-function GBVector(v::T) where {T <: valid_union}
-    x = GBVector{T}()
-    x[] = v
-    return x
-end
-
 function Base.deepcopy(v::GBVector{T}) where {T}
     return GBVector{T}(libgb.GrB_Vector_dup(v))
 end
@@ -37,6 +31,8 @@ nnz(v::GBVector) = libgb.GrB_Vector_nvals(v)
 Base.eltype(::Type{GBVector{T}}) where{T} = T
 
 #type(v::GBVector{T}) = eltype(v)
+
+
 for T ∈ valid_vec
     if T ∈ GxB_vec
         prefix = :GxB
@@ -45,7 +41,7 @@ for T ∈ valid_vec
     end
     func = Symbol(prefix, :_Vector_build_, suffix(T))
     @eval begin
-        function build(v::GBVector{$T}, I::Vector{<:Integer}, X::Vector{$T}; dup = BinaryOps.PLUS)
+        function build(v::GBVector{$T}, I::Vector, X::Vector{$T}; dup = BinaryOps.PLUS)
             nnz(v) == 0 || error("Cannot build vector with existing elements")
             length(X) == length(I) || DimensionMismatch("I and X must have the same length")
             I .-= 1
@@ -66,9 +62,25 @@ for T ∈ valid_vec
             return libgb.$func(v, libgb.GrB_Index(i))
         end
     end
+    func = Symbol(prefix, :_Vector_extractTuples_, suffix(T))
+    @eval begin
+        function SparseArrays.findnz(v::GBVector{$T})
+            return libgb.$func(v)
+        end
+    end
 end
 
-function deleteat!(v::GBVector, i)
+function GBVector(I, X::Vector{T}; dup = BinaryOps.PLUS) where {T <: valid_union}
+    x = GBVector{T}(maximum(I))
+    build(x, I, X, dup = dup)
+    return x
+end
+
+function GBVector(X::Vector)
+    return GBVector([1:length(X)...], X)
+end
+
+function Base.deleteat!(v::GBVector, i)
     i -= 1
     libgb.GrB_Vector_removeElement(v, libgb.GrB_Index(i))
 end

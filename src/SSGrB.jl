@@ -1,13 +1,18 @@
 module SSGrB
 using Libdl: dlsym
 using SSGraphBLAS_jll
-import SparseArrays: nnz
+using SparseArrays
+
+export GBScalar, GBVector, build, findnz, nnz, libgb, clear
+
+include("abstracts.jl")
+include("utils.jl")
 include("lib/LibGraphBLAS.jl")
 using .libgb
-include("abstracts.jl")
+
 include("Containers.jl")
 using .Containers
-include("utils.jl")
+
 include("types.jl")
 include("monoids.jl")
 using .Monoids
