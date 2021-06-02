@@ -142,10 +142,21 @@ end
 function GxB_UnaryOp_ztype(ztype, unaryop)
     @wraperror ccall((:GxB_UnaryOp_ztype, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_UnaryOp), ztype, unaryop)
 end
+function GxB_UnaryOp_ztype(unaryop)
+    z = Ref{GrB_Type}()
+    GxB_UnaryOp_ztype(z, unaryop)
+    return z[]
+end
 
 function GxB_UnaryOp_xtype(xtype, unaryop)
     @wraperror ccall((:GxB_UnaryOp_xtype, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_UnaryOp), xtype, unaryop)
 end
+function GxB_UnaryOp_xtype(unaryop)
+    x = Ref{GrB_Type}()
+    GxB_UnaryOp_ztype(x, unaryop)
+    return x[]
+end
+
 
 function GrB_UnaryOp_free(unaryop)
     @wraperror ccall((:GrB_UnaryOp_free, libgraphblas), GrB_Info, (Ptr{GrB_UnaryOp},), unaryop)
@@ -165,13 +176,28 @@ end
 function GxB_BinaryOp_ztype(ztype, binaryop)
     @wraperror ccall((:GxB_BinaryOp_ztype, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_BinaryOp), ztype, binaryop)
 end
+function GxB_BinaryOp_ztype(binaryop)
+    z = Ref{GrB_Type}()
+    GxB_BinaryOp_ztype(z, binaryop)
+    return z[]
+end
 
 function GxB_BinaryOp_xtype(xtype, binaryop)
     @wraperror ccall((:GxB_BinaryOp_xtype, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_BinaryOp), xtype, binaryop)
 end
+function GxB_BinaryOp_xtype(binaryop)
+    x = Ref{GrB_Type}()
+    GxB_BinaryOp_xtype(x, binaryop)
+    return x[]
+end
 
 function GxB_BinaryOp_ytype(ytype, binaryop)
     @wraperror ccall((:GxB_BinaryOp_ytype, libgraphblas), GrB_Info, (Ptr{GrB_Type}, GrB_BinaryOp), ytype, binaryop)
+end
+function GxB_BinaryOp_ytype(binaryop)
+    y= Ref{GrB_Type}()
+    GxB_BinaryOp_ztype(y, binaryop)
+    return y[]
 end
 
 function GrB_BinaryOp_free(binaryop)
@@ -320,14 +346,18 @@ end
 function GxB_Monoid_operator(op, monoid)
     @wraperror ccall((:GxB_Monoid_operator, libgraphblas), GrB_Info, (Ptr{GrB_BinaryOp}, GrB_Monoid), op, monoid)
 end
-
+function GxB_Monoid_operator(monoid)
+    op = Ref{GrB_BinaryOp}()
+    GxB_Monoid_operator(op, monoid)
+    return op[]
+end
 function GxB_Monoid_identity(identity, monoid)
     @wraperror ccall((:GxB_Monoid_identity, libgraphblas), GrB_Info, (Ptr{Cvoid}, GrB_Monoid), identity, monoid)
 end
 
 function GxB_Monoid_terminal(has_terminal, terminal, monoid)
     @wraperror ccall((:GxB_Monoid_terminal, libgraphblas), GrB_Info, (Ptr{Bool}, Ptr{Cvoid}, GrB_Monoid), has_terminal, terminal, monoid)
-    end
+end
 
 function GrB_Monoid_free(monoid)
     @wraperror ccall((:GrB_Monoid_free, libgraphblas), GrB_Info, (Ptr{GrB_Monoid},), monoid)
@@ -344,9 +374,19 @@ end
 function GxB_Semiring_add(add, semiring)
     @wraperror ccall((:GxB_Semiring_add, libgraphblas), GrB_Info, (Ptr{GrB_Monoid}, GrB_Semiring), add, semiring)
 end
+function GxB_Semiring_add(semiring)
+    m = Ref{GrB_Monoid}()
+    GxB_Semiring_add(m, semiring)
+    return m[]
+end
 
 function GxB_Semiring_multiply(multiply, semiring)
     @wraperror ccall((:GxB_Semiring_multiply, libgraphblas), GrB_Info, (Ptr{GrB_BinaryOp}, GrB_Semiring), multiply, semiring)
+end
+function GxB_Semiring_multiply(semiring)
+    m = Ref{GrB_BinaryOp}()
+    GxB_Semiring_multiply(m, semiring)
+    return m[]
 end
 
 function GrB_Semiring_free(semiring)
@@ -652,6 +692,7 @@ function GrB_Vector_extractElement_UDT(x, v, i)
 end
 
 function GrB_Vector_removeElement(v, i)
+    i -= 1
     @wraperror ccall((:GrB_Vector_removeElement, libgraphblas), GrB_Info, (GrB_Vector, GrB_Index), v, i)
 end
 
@@ -695,7 +736,8 @@ for T ∈ valid_vec
         end
         function $func(v, i)
             x = Ref(zero($T))
-            return $func(x,v,i)
+            $func(x,v,i)
+            return x[]
         end
     end
 
@@ -733,7 +775,7 @@ function GrB_Matrix_new(A, type, nrows, ncols)
 end
 function GrB_Matrix_new(type, nrows, ncols)
     m = Ref{GrB_Matrix}()
-    GrB_Matrix_new(v, type, nrows, ncols)
+    GrB_Matrix_new(m, type, nrows, ncols)
     return m[]
 end
 
@@ -831,7 +873,8 @@ for T ∈ valid_vec
         end
         function $func(A, i, j)
             x = Ref(zero($T))
-            return $func(x, A, i, j)
+            $func(x, A, i, j)
+            return x[]
         end
     end
 
@@ -871,6 +914,8 @@ function GrB_Matrix_extractElement_UDT(x, A, i, j)
 end
 
 function GrB_Matrix_removeElement(C, i, j)
+    i -= 1
+    j -= 1
     @wraperror ccall((:GrB_Matrix_removeElement, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Index, GrB_Index), C, i, j)
 end
 
@@ -889,11 +934,29 @@ end
 function GxB_Matrix_diag(C, v, k, desc)
     @wraperror ccall((:GxB_Matrix_diag, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, Int64, GrB_Descriptor), C, v, k, desc)
 end
-
+function GxB_Matrix_diag(v, k, desc)
+    s = GrB_Vector_size(v)
+    C = GrB_Matrix_new(GrB_Vector_type(v), s + abs(k), s + abs(k))
+    GxB_Matrix_diag(C, v, k, desc)
+    return C
+end
 function GxB_Vector_diag(v, A, k, desc)
     @wraperror ccall((:GxB_Vector_diag, libgraphblas), GrB_Info, (GrB_Vector, GrB_Matrix, Int64, GrB_Descriptor), v, A, k, desc)
 end
-
+function GxB_Vector_diag(A, k, desc)
+    m = GrB_Matrix_nrows(A)
+    n = GrB_Matrix_ncols(A)
+    if 0 <= k <= n - 1
+        s = min(m, n - k)
+    elseif -m + 1 <= k <= -1
+        s = min(m+k, n)
+    else
+        s = 0
+    end
+    v = GxB_Vector_new(GrB_Matrix_type(A), s)
+    GxB_Vector_diag(v, A, k, desc)
+    return v
+end
 @enum GxB_Option_Field::UInt32 begin
     GxB_HYPER_SWITCH = 0
     GxB_BITMAP_SWITCH = 34
@@ -1010,6 +1073,8 @@ function GrB_Descriptor_error(error, d)
     @wraperror ccall((:GrB_Descriptor_error, libgraphblas), GrB_Info, (Ptr{Ptr{Cchar}}, GrB_Descriptor), error, d)
 end
 
+#Most functions here have an input only version, creating the output.
+# It's more annoying here so those will be in the parent module.
 function GrB_mxm(C, Mask, accum, semiring, A, B, desc)
     @wraperror ccall((:GrB_mxm, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_Semiring, GrB_Matrix, GrB_Matrix, GrB_Descriptor), C, Mask, accum, semiring, A, B, desc)
 end

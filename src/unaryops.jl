@@ -1,9 +1,12 @@
 baremodule UnaryOps
-    using ..Containers
+    using ..Types
 end
+
+UnaryUnion = Union{Abstract_GrB_UnaryOp, libgb.GrB_UnaryOp}
+
 function unarynames(name)
     simple = splitconstant(name)[2]
-    containername = Symbol("UNARY_" * simple)
+    containername = Symbol(simple, "_UNARY_T")
     exportedname = Symbol(simple)
     return containername, exportedname
 end
@@ -14,14 +17,14 @@ function createunaryops()
         containername, exportedname = unarynames(name)
         structquote = quote
             struct $containername <: Abstract_GrB_UnaryOp
-                pointers::Dict{DataType, Ptr{Cvoid}}
+                pointers::Dict{DataType, libgb.GrB_UnaryOp}
                 name::String
-                $containername() = new(Dict{DataType, Ptr{Cvoid}}(), $name)
+                $containername() = new(Dict{DataType, libgb.GrB_UnaryOp}(), $name)
             end
         end
-        @eval(Containers, $structquote)
+        @eval(Types, $structquote)
         constquote = quote
-            const $exportedname = Containers.$containername()
+            const $exportedname = Types.$containername()
             export $exportedname
         end
         @eval(UnaryOps, $constquote)
@@ -59,3 +62,6 @@ function load(unaryop::Abstract_GrB_UnaryOp)
         unaryop.pointers[Float64] = load_global(name * "_FP64")
     end
 end
+
+ztype(op::UnaryUnion) = ptrtogbtype(libgb.GxB_UnaryOp_ztype(op))
+xtype(op::UnaryUnion) = ptrtogbtype(libgb.GxB_UnaryOp_xtype(op))

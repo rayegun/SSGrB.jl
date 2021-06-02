@@ -1,9 +1,12 @@
 baremodule Semirings
-    using ..Containers
+    using ..Types
 end
+
+SemiringUnion = Union{Abstract_GrB_Semiring, libgb.GrB_Semiring}
+
 function semiringnames(name)
     simple = name[5:end]
-    containername = Symbol("RIG_" * simple)
+    containername = Symbol(simple, "_RIG_T")
     exportedname = Symbol(simple)
     return containername, exportedname
 end
@@ -14,14 +17,14 @@ function createsemirings()
         containername, exportedname = semiringnames(name)
         structquote = quote
             struct $containername <: Abstract_GrB_Semiring
-                pointers::Dict{DataType, Ptr{Cvoid}}
+                pointers::Dict{DataType, libgb.GrB_Semiring}
                 name::String
-                $containername() = new(Dict{DataType, Ptr{Cvoid}}(), $name)
+                $containername() = new(Dict{DataType, libgb.GrB_Semiring}(), $name)
             end
         end
-        @eval(Containers, $structquote)
+        @eval(Types, $structquote)
         constquote = quote
-            const $exportedname = Containers.$containername()
+            const $exportedname = Types.$containername()
             export $exportedname
         end
         @eval(Semirings,$constquote)
@@ -63,3 +66,10 @@ function load(rig::Abstract_GrB_Semiring)
         rig.pointers[Float64] = load_global(name * "_FP64")
     end
 end
+
+multiplyop(rig::SemiringUnion) = libgb.GxB_Semiring_multiply(rig)
+addop(rig::SemiringUnion) = libgb.GxB_Semiring_add(rig)
+
+xtype(rig::SemiringUnion) = xtype(addop(rig))
+ytype(rig::SemiringUnion) = ytype(addop(rig))
+ztype(rig::SemiringUnion) = ztype(addop(rig))

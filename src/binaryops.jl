@@ -1,27 +1,29 @@
 baremodule BinaryOps
-    using ..Containers
+    using ..Types
 end
+
+BinaryUnion = Union{Abstract_GrB_BinaryOp, libgb.GrB_BinaryOp}
+
 function binarynames(name)
     simple = splitconstant(name)[2]
-    containername = Symbol("BINARY_" * simple)
+    containername = Symbol(simple, "_BINARY_T")
     exportedname = Symbol(simple)
     return containername, exportedname
 end
-
 function createbinaryops()
     builtins = ["GrB_FIRST", "GrB_SECOND", "GxB_POW", "GrB_PLUS", "GrB_MINUS", "GrB_TIMES", "GrB_DIV", "GxB_RMINUS", "GxB_RDIV", "GxB_PAIR", "GxB_ANY", "GxB_ISEQ", "GxB_ISNE", "GxB_ISGT", "GxB_ISLT", "GxB_ISGE", "GxB_ISLE", "GrB_MIN", "GrB_MAX", "GxB_LOR", "GxB_LAND", "GxB_LXOR", "GxB_ATAN2", "GxB_HYPOT", "GxB_FMOD", "GxB_REMAINDER", "GxB_LDEXP", "GxB_COPYSIGN", "GrB_BOR", "GrB_BAND", "GrB_BXOR", "GrB_BXNOR", "GxB_BGET", "GxB_BSET", "GxB_BCLR", "GxB_BSHIFT", "GrB_EQ", "GrB_NE", "GrB_GT", "GrB_LT", "GrB_GE", "GrB_LE", "GxB_CMPLX", "GxB_FIRSTI", "GxB_FIRSTI1", "GxB_FIRSTJ", "GxB_FIRSTJ1", "GxB_SECONDI", "GxB_SECONDI1", "GxB_SECONDJ", "GxB_SECONDJ1"]
     for name ∈ builtins
         containername, exportedname = binarynames(name)
         structquote = quote
             struct $containername <: Abstract_GrB_BinaryOp
-                pointers::Dict{DataType, Ptr{Cvoid}}
+                pointers::Dict{DataType, Ptr{libgb.GrB_BinaryOp}}
                 name::String
-                $containername() = new(Dict{DataType, Ptr{Cvoid}}(), $name)
+                $containername() = new(Dict{DataType, Ptr{libgb.GrB_BinaryOp}}(), $name)
             end
         end
-        @eval(Containers, $structquote)
+        @eval(Types, $structquote)
         constquote = quote
-            const $exportedname = Containers.$containername()
+            const $exportedname = Types.$containername()
             export $exportedname
         end
         @eval(BinaryOps,$constquote)
@@ -58,3 +60,7 @@ function load(binary::Abstract_GrB_BinaryOp)
         binary.pointers[Float64] = load_global(name * "_FP64")
     end
 end
+
+xtype(op::BinaryUnion) = ptrtogbtype[libgb.GxB_BinaryOp_xtype(op)]
+ytype(op::BinaryUnion) = ptrtogbtype[libgb.GxB_BinaryOp_ytype(op)]
+ztype(op::BinaryUnion) = ptrtogbtype[libgb.GxB_BinaryOp_ztype(op)]

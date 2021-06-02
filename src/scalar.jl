@@ -1,15 +1,3 @@
-mutable struct GBScalar{T} <: Abstract_GrB_Struct
-    p::libgb.GxB_Scalar
-    function GBScalar{T}(p::libgb.GxB_Scalar) where {T}
-        s = new(p)
-        function f(scalar)
-            libgb.GxB_Scalar_free(Ref(scalar.p))
-            scalar.p = C_NULL
-        end
-        return finalizer(f, s)
-    end
-end
-
 GBScalar{T}() where {T} = GBScalar{T}(libgb.GxB_Scalar_new(toGrB_Type(T)))
 
 Base.unsafe_convert(::Type{libgb.GxB_Scalar}, s::GBScalar) = s.p

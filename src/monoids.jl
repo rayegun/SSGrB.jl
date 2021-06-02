@@ -1,9 +1,10 @@
 baremodule Monoids
-    using ..Containers
+    using ..Types
 end
+MonoidUnion = Union{Abstract_GrB_Monoid, libgb.GrB_Monoid}
 function monoidnames(name)
     simple = splitconstant(name)[2]
-    containername = Symbol("MONOID_" * simple)
+    containername = Symbol(simple, "_MONOID_T")
     exportedname = Symbol(simple * "_MONOID")
     return containername, exportedname
 end
@@ -13,14 +14,14 @@ function createmonoids()
         containername, exportedname = monoidnames(name)
         structquote = quote
             struct $containername <: Abstract_GrB_Monoid
-                pointers::Dict{DataType, Ptr{Cvoid}}
+                pointers::Dict{DataType, libgb.GrB_Monoid}
                 name::String
-                $containername() = new(Dict{DataType, Ptr{Cvoid}}(), $name)
+                $containername() = new(Dict{DataType, libgb.GrB_Monoid}(), $name)
             end
         end
-        @eval(Containers, $structquote)
+        @eval(Types, $structquote)
         constquote = quote
-            const $exportedname = Containers.$containername()
+            const $exportedname = Types.$containername()
             export $exportedname
         end
         @eval(Monoids, $constquote)
@@ -58,3 +59,8 @@ function load(monoid::Abstract_GrB_Monoid)
         monoid.pointers[Float64] = load_global(name * (isGxB(name) ? "_FP64_MONOID" : "_MONOID_FP64"))
     end
 end
+
+operator(monoid::MonoidUnion) = libgb.GxB_Monoid_operator(monoid)
+xtype(monoid::MonoidUnion) = xtype(operator(monoid))
+ytype(monoid::MonoidUnion) = ytype(operator(monoid))
+ztype(monoid::MonoidUnion) = ztype(operator(monoid))
