@@ -2,8 +2,6 @@ GBScalar{T}() where {T} = GBScalar{T}(libgb.GxB_Scalar_new(toGrB_Type(T)))
 
 Base.unsafe_convert(::Type{libgb.GxB_Scalar}, s::GBScalar) = s.p
 
-Base.copy(s::GBScalar{T}) where {T} = GBScalar{T}(s.p)
-
 function GBScalar(v::T) where {T <: valid_union}
     x = GBScalar{T}()
     x[] = v

@@ -1,4 +1,5 @@
 module SSGrB
+using Base: Int8
 using Libdl: dlsym
 using SSGraphBLAS_jll
 using SparseArrays
@@ -40,5 +41,8 @@ function __init__()
     loadselectops()
     loaddescriptors()
     libgb.GxB_init(libgb.GrB_BLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
+    atexit() do
+        libgb.GrB_finalize()
+    end
 end
 end

@@ -55,3 +55,16 @@ function load_globaltypes()
 end
 
 juliatype(::GrB_Type{T}) where {T} = T
+
+function optype(atype, btype)
+    #If atype is signed, optype must be signed and at least big enough.
+    if atype <: Integer || btype <: Integer
+        if atype <: Signed || btype <: Signed
+            return signed(promote_type(atype, btype))
+        else
+            return promote_type(atype, btype)
+        end
+    else
+        return promote_type(atype, btype)
+    end
+end

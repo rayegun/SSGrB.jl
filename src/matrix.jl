@@ -6,8 +6,6 @@ GBMatrix{T}() where {T} = GBMatrix{T}(libgb.GxB_INDEX_MAX, libgb.GxB_INDEX_MAX)
 
 Base.unsafe_convert(::Type{libgb.GrB_Matrix}, A::GBMatrix) = A.p
 
-Base.copy(A::GBMatrix{T}) where {T} = GBMatrix{T}(A.p)
-
 function Base.deepcopy(A::GBMatrix{T}) where {T}
     return GBMatrix{T}(libgb.GrB_Matrix_dup(A))
 end

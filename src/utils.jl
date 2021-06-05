@@ -66,7 +66,7 @@ grb_ptr(x::Abstract_GrB_Struct) = x.p
 
 function toGrB_Type(T::DataType)
     if T == Bool
-        BOOL
+        return BOOL
     elseif T == Int8
         return INT8
     elseif T == UInt8

@@ -4,8 +4,6 @@ GBVector{T}() where {T} = GBVector{T}(libgb.GxB_INDEX_MAX)
 
 Base.unsafe_convert(::Type{libgb.GrB_Vector}, v::GBVector) = v.p
 
-Base.copy(v::GBVector{T}) where {T} = GBVector{T}(v.p)
-
 function Base.deepcopy(v::GBVector{T}) where {T}
     return GBVector{T}(libgb.GrB_Vector_dup(v))
 end
