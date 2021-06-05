@@ -16,9 +16,9 @@ function createbinaryops()
         containername, exportedname = binarynames(name)
         structquote = quote
             struct $containername <: Abstract_GrB_BinaryOp
-                pointers::Dict{DataType, Ptr{libgb.GrB_BinaryOp}}
+                pointers::Dict{DataType, libgb.GrB_BinaryOp}
                 name::String
-                $containername() = new(Dict{DataType, Ptr{libgb.GrB_BinaryOp}}(), $name)
+                $containername() = new(Dict{DataType, libgb.GrB_BinaryOp}(), $name)
             end
         end
         @eval(Types, $structquote)

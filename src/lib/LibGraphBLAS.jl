@@ -17,7 +17,14 @@ macro wraperror(code)
         end
     end
 end
-
+function tozerobased(I)
+    I isa Vector && (return I .- 1)
+    I isa Integer && (return I - 1)
+end
+function toonebased(I)
+    I isa Vector && (return I .+ 1)
+    I isa Integer && (return I + 1)
+end
 const valid_vec = [Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32,
 Int64, UInt64, Float32, Float64, ComplexF32, ComplexF64]
 
@@ -692,7 +699,7 @@ function GrB_Vector_extractElement_UDT(x, v, i)
 end
 
 function GrB_Vector_removeElement(v, i)
-    i -= 1
+    i = tozerobased(i)
     @wraperror ccall((:GrB_Vector_removeElement, libgraphblas), GrB_Info, (GrB_Vector, GrB_Index), v, i)
 end
 
@@ -711,7 +718,7 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(w, I, X, nvals, dup)
-            I .-= 1 #Switch to 0-based indexing at ccall barrier
+            tozerobased(I) #Switch to 0-based indexing at ccall barrier
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Vector, Ptr{GrB_Index}, Ptr{$type}, GrB_Index, GrB_BinaryOp), w, I, X, nvals, dup)
         end
     end
@@ -721,7 +728,7 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(w, x, i)
-            i -= 1 #Switch to 0-based indexing at ccall barrier
+            i = tozerobased(i) #Switch to 0-based indexing at ccall barrier
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Vector, $type, GrB_Index), w, x, i)
         end
     end
@@ -731,7 +738,7 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(x, v, i)
-            i -= 1 #Switch to 0-based indexing at ccall barrier
+            i = tozerobased(i) #Switch to 0-based indexing at ccall barrier
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{$type}, GrB_Vector, GrB_Index), x, v, i)
         end
         function $func(v, i)
@@ -845,8 +852,8 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(C, I, J, X, nvals, dup)
-            I .-= 1 #Switch to 0-based indexing at ccall barrier
-            J .-= 1
+            I = tozerobased(I) #Switch to 0-based indexing at ccall barrier
+            J = tozerobased(J)
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Matrix, Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{$type}, GrB_Index, GrB_BinaryOp), C, I, J, X, nvals, dup)
         end
     end
@@ -856,8 +863,8 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(C, x, i, j)
-            i -= 1 #Switch to 0-based indexing at ccall barrier
-            j -= 1
+            i = tozerobased(i) #Switch to 0-based indexing at ccall barrier
+            j = tozerobased(j)
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (GrB_Matrix, $type, GrB_Index, GrB_Index), C, x, i, j)
         end
     end
@@ -867,8 +874,8 @@ for T ∈ valid_vec
     funcstr = string(func)
     @eval begin
         function $func(x, A, i, j)
-            i -= 1 #Switch to 0-based indexing at ccall barrier
-            j -= 1
+            i = tozerobased(i) #Switch to 0-based indexing at ccall barrier
+            j = tozerobased(j)
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{$type}, GrB_Matrix, GrB_Index, GrB_Index), x, A, i, j)
         end
         function $func(A, i, j)
@@ -885,11 +892,11 @@ for T ∈ valid_vec
         function $func(I, J, X, nvals, A)
             #I, X, and nvals are outputs
             @wraperror ccall(($funcstr, libgraphblas), GrB_Info, (Ptr{GrB_Index}, Ptr{GrB_Index}, Ptr{$type}, Ptr{GrB_Index}, GrB_Matrix), I, J, X, nvals, A)
-            I .+= 1 #Back to 1-based indexing after ccall
-            J .+= 1
+            I = toonebased(I) #Back to 1-based indexing after ccall
+            J = toonebased(J)
         end
         function $func(A)
-            nvals = GrB_Matrix_nvals(v)
+            nvals = GrB_Matrix_nvals(A)
             I = Vector{GrB_Index}(undef, nvals)
             J = Vector{GrB_Index}(undef, nvals)
             X = Vector{$type}(undef, nvals)
@@ -914,8 +921,8 @@ function GrB_Matrix_extractElement_UDT(x, A, i, j)
 end
 
 function GrB_Matrix_removeElement(C, i, j)
-    i -= 1
-    j -= 1
+    i = tozerobased(i)
+    j = tozerobased(j)
     @wraperror ccall((:GrB_Matrix_removeElement, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Index, GrB_Index), C, i, j)
 end
 
@@ -1136,10 +1143,12 @@ function GrB_Matrix_eWiseAdd_BinaryOp(C, Mask, accum, add, A, B, desc)
 end
 
 function GrB_Vector_extract(w, mask, accum, u, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_extract, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_Vector, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, u, I, ni, desc)
 end
-
 function GrB_Matrix_extract(C, Mask, accum, A, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_extract, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_Matrix, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, A, I, ni, J, nj, desc)
 end
 

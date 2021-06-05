@@ -15,9 +15,10 @@ GrB_Type{T}(name::AbstractString) where {T<:valid_union} = GrB_Type{T}(load_glob
 show(io::IO, ::GrB_Type{T}) where T = print("GrB_Type{" * string(T) * "}")
 
 struct GrB_ALL_Type <: Abstract_GrB_Type
-    p::Ptr{Cvoid}
+    p::Ptr{libgb.GrB_Index}
 end
 show(io::IO, ::GrB_ALL_Type) = print(io, "GrB_ALL")
+Base.unsafe_convert(::Type{Ptr{libgb.GrB_Index}}, s::GrB_ALL_Type) = s.p
 
 function load_globaltypes()
     global ptrtogbtype = Dict{Ptr, Abstract_GrB_Type}()
@@ -50,7 +51,7 @@ function load_globaltypes()
     ptrtogbtype[FC64.p] = FC64
     global NULL = GrB_Type{Nothing}(C_NULL)
     ptrtogbtype[NULL.p] = NULL
-    global ALL = GrB_ALL_Type(load_global("GrB_ALL"))
+    global ALL = GrB_ALL_Type(load_global("GrB_ALL", libgb.GrB_Index))
     ptrtogbtype[ALL.p] = ALL
 end
 

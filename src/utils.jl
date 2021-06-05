@@ -1,4 +1,4 @@
-function suffix(T::DataType)
+function suffix(T)
     if T == Bool
         return "BOOL"
     elseif T == Int8
@@ -30,7 +30,7 @@ function suffix(T::DataType)
     end
 end
 
-function towrappertype(T::DataType)
+function towrappertype(T)
     if T == Bool
         return :Bool
     elseif T == Int8
@@ -64,7 +64,7 @@ end
 
 grb_ptr(x::Abstract_GrB_Struct) = x.p
 
-function toGrB_Type(T::DataType)
+function toGrB_Type(T)
     if T == Bool
         return BOOL
     elseif T == Int8
@@ -96,7 +96,7 @@ function toGrB_Type(T::DataType)
     end
 end
 
-function load_global(str)
+function load_global(str, type = Cvoid)
     x =
     try
         dlsym(SSGraphBLAS_jll.libgraphblas_handle, str)
@@ -104,7 +104,7 @@ function load_global(str)
         print("Symbol not available: " * str * "\n $e")
         return C_NULL
     end
-    return unsafe_load(cglobal(x, Ptr{Cvoid}))
+    return unsafe_load(cglobal(x, Ptr{type}))
 end
 
 
@@ -113,3 +113,8 @@ function splitconstant(str)
 end
 
 isGxB(name) = name[1:3] == "GxB"
+
+# This is a bad idea. If someone sees this remind me to remove it or document it.
+function arrrrrgh()
+    eval(:(Base.show(io::IO, a::Unsigned) = print(io, Int(a))))
+end

@@ -1,19 +1,31 @@
-GBVector{T}(n) where {T} = GBVector{T}(libgb.GrB_Vector_new(toGrB_Type(T),n))
-
+function GBVector{T}(n) where {T}
+    GBVector{T}(libgb.GrB_Vector_new(toGrB_Type(T),n))
+end
 GBVector{T}() where {T} = GBVector{T}(libgb.GxB_INDEX_MAX)
 
 Base.unsafe_convert(::Type{libgb.GrB_Vector}, v::GBVector) = v.p
 
-function Base.deepcopy(v::GBVector{T}) where {T}
+function Base.copy(v::GBVector{T}) where {T}
     return GBVector{T}(libgb.GrB_Vector_dup(v))
 end
 
-clear(v::GBVector) = libgb.GrB_Vector_clear(v)
+clear!(v::GBVector) = libgb.GrB_Vector_clear(v)
 
-Base.size(v::GBVector) = libgb.GrB_Vector_size(v)
+function Base.size(v::GBVector, dim = nothing)
+    if dim === nothing || dim == 1
+        return Int64(libgb.GrB_Vector_size(v))
+    else
+        return 1
+    end
+end
 
-nnz(v::GBVector) = libgb.GrB_Vector_nvals(v)
+nnz(v::GBVector) = Int64(libgb.GrB_Vector_nvals(v))
 Base.eltype(::Type{GBVector{T}}) where{T} = T
+
+Base.similar(v::GBVector) = GBVector{eltype(v)}(size(v))
+Base.similar(::GBVector{T}, dims::Integer) where {T} = GBVector{T}(dims)
+Base.similar(v::GBVector, element_type::DataType) = GBVector{element_type}(size(v))
+Base.similar(::GBVector, element_type::DataType, dims::Integer) = GBVector{element_type}(dims)
 
 for T ∈ valid_vec
     if T ∈ GxB_vec
@@ -37,7 +49,7 @@ for T ∈ valid_vec
     end
     func = Symbol(prefix, :_Vector_extractElement_, suffix(T))
     @eval begin
-        function Base.getindex(v::GBVector{$T}, i)
+        function Base.getindex(v::GBVector{$T}, i::Integer)
             return libgb.$func(v, libgb.GrB_Index(i))
         end
     end
@@ -46,6 +58,51 @@ for T ∈ valid_vec
         function SparseArrays.findnz(v::GBVector{$T})
             return libgb.$func(v)
         end
+    end
+end
+
+function extract!(
+    w::GBVector, u::GBVector, I, ni = length(I);
+    mask = C_NULL, accum = C_NULL, desc = C_NULL
+    )
+    if I != ALL
+        I = Vector{libgb.GrB_Index}(I)
+    end
+    libgb.GrB_Vector_extract(w, mask, accum, u, I, ni, desc)
+    return w
+end
+
+function extract(u::GBVector, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
+    if I == ALL
+        wlen = size(u)
+        ni = 1
+    elseif ni == libgb.GxB_RANGE && length(I) == 2
+        wlen = length(I[1]:I[2])
+    elseif ni == libgb.GxB_STRIDE && length(I) == 3
+        wlen = length(I[1]:I[3]:I[2])
+        I[3] += 1
+    elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
+        wlen = length(I[1]:I[3]:I[2])
+        I[3] = -I[3] + 1
+    else
+        ni = length(I)
+        wlen = ni
+    end
+    w = similar(u, wlen)
+    return extract!(w, u, I, ni; mask = mask, accum = accum, desc = desc)
+end
+
+Base.getindex(u::GBVector, ::Colon) = extract(u, ALL)
+Base.getindex(u::GBVector, i::Vector) = extract(u, i)
+function Base.getindex(u::GBVector, i::UnitRange)
+    i.start <= i.stop || throw(BoundsError(u, i))
+    return extract(u, [i.start, i.stop], libgb.GxB_RANGE)
+end
+function Base.getindex(u::GBVector, i::StepRange)
+    if i.start <= i.stop && i.step > 0
+        return extract(u, [i.start, i.stop, i.step], libgb.GxB_STRIDE)
+    elseif i.start >= i.stop && i.step < 0
+        return extract(u, [i.start, i.stop, i.step], libgb.GxB_BACKWARDS)
     end
 end
 
@@ -70,7 +127,7 @@ function Base.resize!(v::GBVector, nrows_new)
 end
 
 function diagonal(A::GBMatrix, k = 0, desc = GrB_NULL)
-    return libgb.GxB_Vector_diag(v, k, desc)
+    return libgb.GxB_Vector_diag(A, k, desc)
 end
 
 function printtest(io::IO, M::GBVector)

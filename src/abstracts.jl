@@ -14,7 +14,6 @@ abstract type Abstract_UnaryOp_Container <: Abstract_GrB_UnaryOp end
 abstract type Abstract_BinaryOp_Container <: Abstract_GrB_BinaryOp end
 abstract type Abstract_Monoid_Container <: Abstract_GrB_Monoid end
 
-
 isloaded(o::Abstract_GrB_Op) = !isempty(o.pointers)
 
 function validtypes(o::Abstract_GrB_Op)

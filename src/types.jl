@@ -41,3 +41,66 @@ mutable struct GBMatrix{T} <: Abstract_GrB_Struct
 end
 
 const GBVecOrMat = Union{GBVector{T}, GBMatrix{T}} where T
+const OpUnion = Union{
+    libgb.GrB_Monoid,
+    libgb.GrB_UnaryOp,
+    libgb.GrB_Semiring,
+    libgb.GrB_BinaryOp,
+    libgb.GxB_SelectOp
+}
+
+
+function getsemiring(t, semiring = nothing)
+    if semiring === nothing
+        if t == Bool
+            return Semirings.LOR_LAND_SEMIRING[t]
+        else
+            return Semirings.PLUS_TIMES_SEMIRING[t]
+        end
+    end
+    return getoperator(semiring, t)
+end
+function getsemiring(A::GBVecOrMat, B::GBVecOrMat, semiring = nothing)
+    t = optype(eltype(A), eltype(B))
+    return getsemiring(t, semiring)
+end
+
+function getbinaryop(t, op = nothing)
+    if op === nothing
+        if t == Bool
+            return BinaryOps.LAND[t]
+        else
+            return BinaryOps.TIMES[t]
+        end
+    end
+    return getoperator(op, t)
+end
+function getbinaryop(A::GBVecOrMat, B::GBVecOrMat, op = nothing)
+    t = optype(eltype(A), eltype(B))
+    return getbinaryop(t, op)
+end
+
+function getmonoid(t, monoid = nothing)
+    if monoid === nothing
+        if t == Bool
+            return Monoids.LAND_MONOID[t]
+        else
+            return Monoids.TIMES_MONOID[t]
+        end
+    end
+    return getoperator(monoid, t)
+end
+function getmonoid(A::GBVecOrMat, B::GBVecOrMat, monoid = nothing)
+    t = optype(eltype(A), eltype(B))
+    return getbinaryop(t, monoid)
+end
+
+function getoperator(op, t)
+    if op isa Abstract_GrB_Op
+        return op[t]
+    elseif op isa OpUnion
+        return op
+    else
+        error("Not a valid GrB op/semiring")
+    end
+end

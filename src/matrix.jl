@@ -6,23 +6,29 @@ GBMatrix{T}() where {T} = GBMatrix{T}(libgb.GxB_INDEX_MAX, libgb.GxB_INDEX_MAX)
 
 Base.unsafe_convert(::Type{libgb.GrB_Matrix}, A::GBMatrix) = A.p
 
-function Base.deepcopy(A::GBMatrix{T}) where {T}
+function Base.copy(A::GBMatrix{T}) where {T}
     return GBMatrix{T}(libgb.GrB_Matrix_dup(A))
 end
 
-clear(A::GBMatrix) = libgb.GrB_Matrix_clear(A)
+clear!(A::GBMatrix) = libgb.GrB_Matrix_clear(A)
 
-Base.size(A::GBMatrix) = (libgb.GrB_Matrix_nrows(A), libgb.GrB_Matrix_ncols(A))
-function Base.size(A::GBMatrix, dim)
-    if dim == 1
-        return size(A)[1]
+function Base.size(A::GBMatrix, dim = nothing)
+    if dim === nothing
+        return Int64.(libgb.GrB_Matrix_nrows(A), libgb.GrB_Matrix_ncols(A))
+    elseif dim == 1
+        return Int64(libgb.GrB_Matrix_nrows(A))
     elseif dim == 2
-        return size(A)[2]
+        return Int64(libgb.GrB_Matrix_ncols(A))
+    else
+        return 1
     end
 end
 
 nnz(A::GBMatrix) = libgb.GrB_Matrix_nvals(A)
 Base.eltype(::Type{GBMatrix{T}}) where{T} = T
+
+Base.similar(v::GBMatrix) = GBMatrix{eltype(v)}(size(v))
+Base.similar(::GBMatrix{T}, dims...) where {T} = GBMatrix{T}(dims...)
 
 for T ∈ valid_vec
     if T ∈ GxB_vec
@@ -60,7 +66,7 @@ for T ∈ valid_vec
             return libgb.$func(A, libgb.GrB_Index(i), libgb.GrB_Index(j))
         end
     end
-    func = Symbol(prefix, :_Vector_extractTuples_, suffix(T))
+    func = Symbol(prefix, :_Matrix_extractTuples_, suffix(T))
     @eval begin
         function SparseArrays.findnz(A::GBMatrix{$T})
             return libgb.$func(A)
@@ -68,10 +74,68 @@ for T ∈ valid_vec
     end
 end
 
+function extract!(
+    C::GBMatrix, A::GBMatrix, I, ni, J, nj;
+    mask = C_NULL, accum = C_NULL, desc = C_NULL
+)
+    if I != ALL
+        I = Vector{libgb.GrB_Index}(I)
+    end
+    if J != ALL
+        J = Vector{libgb.GrB_Index}(J)
+    end
+    libgb.GrB_Matrix_extract(C, mask, accum, A, I, ni, J, nj, desc)
+    return C
+end
+
+function extract(
+    A, I, J, ni = nothing, nj = nothing;
+    mask = C_NULL, accum = C_NULL, desc = C_NULL
+)
+    if I == ALL
+        Ilen = size(A,1)
+        ni = 1
+    elseif ni == libgb.GxB_RANGE && length(I) == 2
+        Ilen = length(I[1]:I[2])
+    elseif ni == libgb.GxB_STRIDE && length(I) == 3
+        Ilen = length(I[1]:I[3]:I[2])
+        I[3] += 1
+    elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
+        Ilen = length(I[1]:I[3]:I[2])
+        I[3] = -I[3] + 1
+    else
+        ni = length(I)
+        Ilen = ni
+    end
+    if J == ALL
+        Jlen = size(A,2)
+        nj = 1
+    elseif nj == libgb.GxB_RANGE && length(J) == 2
+        Jlen = length(J[1]:J[2])
+    elseif nj == libgb.GxB_STRIDE && length(J) == 3
+        Jlen = length(J[1]:J[3]:J[2])
+        J[3] += 1
+    elseif nj == libgb.GxB_BACKWARDS && length(J) == 3
+        Jlen = length(J[1]:J[3]:J[2])
+        J[3] = -J[3] + 1
+    else
+        nj = length(J)
+        Jlen = nj
+    end
+    C = similar(A, Ilen, Jlen)
+    return extract!(C, A, I, ni, J, nj; mask = mask, accum = accum, desc = desc)
+end
+
+Base.getindex(A::GBMatrix, ::Colon, j::Union{Integer, Vector}) = extract(A, ALL, j)
+Base.getindex(A::GBMatrix, i::Union{Integer, Vector}, ::Colon) = extract(A, i, ALL)
+Base.getindex(A::GBMatrix, ::Colon, ::Colon) = extract(ALL, ALL)
+
+
+
 function GBMatrix(
-        I::Vector, J::Vector, X::Vector{T};
-        dup = BinaryOps.PLUS, nrows = maximum(I), ncols = maximum(J)
-    ) where {T}
+    I::Vector, J::Vector, X::Vector{T};
+    dup = BinaryOps.PLUS, nrows = maximum(I), ncols = maximum(J)
+) where {T}
     A = GBMatrix{T}(nrows, ncols)
     build(A, I, J, X, dup = dup)
     return A

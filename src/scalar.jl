@@ -12,8 +12,6 @@ function Base.deepcopy(s::GBScalar{T}) where {T}
     return GBScalar{T}(libgb.GxB_Scalar_dup(s))
 end
 
-#dup(s::GBScalar) = Base.deepcopy(s)
-
 clear(s::GBScalar) = libgb.GxB_Scalar_clear(s)
 
 for T ∈ valid_vec
@@ -30,10 +28,7 @@ for T ∈ valid_vec
         end
     end
 end
-
-
 Base.eltype(::Type{GBScalar{T}}) where{T} = T
-#type(s::GBScalar{T}) = eltype(s)
 
 function Base.show(io::IO, ::MIME"text/plain", s::GBScalar{T}) where {T}
     print(io, "GBScalar{", string(T), "}: ", string(s[]))
