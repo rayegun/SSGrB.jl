@@ -20,10 +20,12 @@ end
 function tozerobased(I)
     I isa Vector && (return I .- 1)
     I isa Integer && (return I - 1)
+    return I
 end
 function toonebased(I)
     I isa Vector && (return I .+ 1)
     I isa Integer && (return I + 1)
+    return I
 end
 const valid_vec = [Bool, Int8, UInt8, Int16, UInt16, Int32, UInt32,
 Int64, UInt64, Float32, Float64, ComplexF32, ComplexF64]

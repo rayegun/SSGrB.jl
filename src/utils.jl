@@ -115,6 +115,6 @@ end
 isGxB(name) = name[1:3] == "GxB"
 
 # This is a bad idea. If someone sees this remind me to remove it or document it.
-function arrrrrgh()
+function arrrrgh()
     eval(:(Base.show(io::IO, a::Unsigned) = print(io, Int(a))))
 end

@@ -62,7 +62,7 @@ for T ∈ valid_vec
     end
     func = Symbol(prefix, :_Matrix_extractElement_, suffix(T))
     @eval begin
-        function Base.getindex(A::GBMatrix{$T}, i, j)
+        function Base.getindex(A::GBMatrix{$T}, i::Integer, j::Integer)
             return libgb.$func(A, libgb.GrB_Index(i), libgb.GrB_Index(j))
         end
     end
@@ -79,10 +79,18 @@ function extract!(
     mask = C_NULL, accum = C_NULL, desc = C_NULL
 )
     if I != ALL
-        I = Vector{libgb.GrB_Index}(I)
+        if !(I isa Vector)
+            I = libgb.GrB_Index[I]
+        else
+            I = Vector{libgb.GrB_Index}(I)
+        end
     end
     if J != ALL
-        J = Vector{libgb.GrB_Index}(J)
+        if !(J isa Vector)
+            J = libgb.GrB_Index[J]
+        else
+            J = Vector{libgb.GrB_Index}(J)
+        end
     end
     libgb.GrB_Matrix_extract(C, mask, accum, A, I, ni, J, nj, desc)
     return C
@@ -125,12 +133,43 @@ function extract(
     C = similar(A, Ilen, Jlen)
     return extract!(C, A, I, ni, J, nj; mask = mask, accum = accum, desc = desc)
 end
-
-Base.getindex(A::GBMatrix, ::Colon, j::Union{Integer, Vector}) = extract(A, ALL, j)
-Base.getindex(A::GBMatrix, i::Union{Integer, Vector}, ::Colon) = extract(A, i, ALL)
-Base.getindex(A::GBMatrix, ::Colon, ::Colon) = extract(ALL, ALL)
-
-
+function Base.getindex(A::GBMatrix, i, j)
+    ni = nothing
+    nj = nothing
+    i isa Colon && (i = ALL)
+    j isa Colon && (j = ALL)
+    if i isa StepRange
+        if i.start <= i.stop && i.step > 0
+            i = [i.start, i.stop, i.step]
+            ni = libgb.GxB_STRIDE
+        elseif i.start >= i.stop && i.step < 0
+            i = [i.start, i.stop, i.step]
+            ni = libgb.GxB_BACKWARDS
+        else
+            throw(BoundsError(u,i))
+        end
+    elseif i isa UnitRange
+        i.start <= i.stop || throw(BoundsError(u,i))
+        i = [i.start, i.stop]
+        ni = libgb.GxB_RANGE
+    end
+    if j isa StepRange
+        if j.start <= j.stop && j.step > 0
+            j = [j.start, j.stop, j.step]
+            nj = libgb.GxB_STRIDE
+        elseif j.start >= j.stop && j.step < 0
+            j= [j.start, j.stop, j.step]
+            nj = libgb.GxB_BACKWARDS
+        else
+            throw(BoundsError(u,j))
+        end
+    elseif j isa UnitRange
+        j.start <= j.stop || throw(BoundsError(u,j))
+        j = [j.start, j.stop]
+        nj = libgb.GxB_RANGE
+    end
+    return extract(A, i, j, ni, nj)
+end
 
 function GBMatrix(
     I::Vector, J::Vector, X::Vector{T};

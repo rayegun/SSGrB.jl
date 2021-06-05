@@ -103,6 +103,8 @@ function Base.getindex(u::GBVector, i::StepRange)
         return extract(u, [i.start, i.stop, i.step], libgb.GxB_STRIDE)
     elseif i.start >= i.stop && i.step < 0
         return extract(u, [i.start, i.stop, i.step], libgb.GxB_BACKWARDS)
+    else
+        throw(BoundsError(u, i))
     end
 end
 
