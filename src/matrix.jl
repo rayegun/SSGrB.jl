@@ -27,7 +27,7 @@ end
 nnz(A::GBMatrix) = libgb.GrB_Matrix_nvals(A)
 Base.eltype(::Type{GBMatrix{T}}) where{T} = T
 
-Base.similar(v::GBMatrix) = GBMatrix{eltype(v)}(size(v))
+Base.similar(A::GBMatrix) = GBMatrix{eltype(A)}(size(A))
 Base.similar(::GBMatrix{T}, dims...) where {T} = GBMatrix{T}(dims...)
 
 for T ∈ valid_vec
@@ -166,7 +166,7 @@ end
     C::GBMatrix,
     A,
     I::Union{Vector, UnitRange, StepRange},
-    J::Uion{Vector, UnionRange, StepRange}
+    J::Union{Vector, UnitRange, StepRange}
 )
     subassign!(C, A, I, J; mask, accum, desc)
 end
@@ -197,7 +197,7 @@ function diagonal(v::GBVector, k = 0, desc = GrB_NULL)
 end
 
 function printtest(io::IO, M::GBMatrix)
-    str = mktemp() do fname, f
+    str = mktemp() do _, f
         cf = Libc.FILE(f)
         libgb.GxB_Matrix_fprint(M, "Test", libgb.GxB_SHORT, cf)
         ccall(:fflush, Cint, (Ptr{Cvoid},), cf)

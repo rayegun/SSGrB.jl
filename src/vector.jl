@@ -145,8 +145,8 @@ function printtest(io::IO, M::GBVector)
     str = mktemp() do _, f
         cf = Libc.FILE(f)
         libgb.GxB_Vector_fprint(M, "Test", libgb.GxB_SHORT, cf)
-        ccall(:fflush, Cint, (Ptr{Cvoid},), cf)
-        seek(f, 0)
+        flush(f)
+        seekstart(f)
         x = read(f, String)
         close(cf)
         x

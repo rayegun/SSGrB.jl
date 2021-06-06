@@ -1,18 +1,123 @@
-baremodule Descriptors
-    import ..SSGrB: load_global
-    import ..Types
-end
 
-mutable struct GBDescriptor <: Abstract_GrB_Struct
+
+mutable struct Descriptor <: Abstract_GrB_Descriptor
     p::libgb.GrB_Descriptor
-    function GBDescriptor(p::libgb.GrB_Descriptor)
+    function Descriptor(p::libgb.GrB_Descriptor)
         d = new(p)
         function f(descriptor)
             libgb.GrB_Descriptor_free(Ref(descriptor.p))
-            vector.p = C_NULL
         end
         return finalizer(f, d)
     end
+end
+
+function Descriptor()
+    return Descriptor(libgb.GrB_Descriptor_new())
+end
+
+Base.unsafe_convert(::Type{libgb.GrB_Descriptor}, d::Descriptor) = d.p
+
+function Base.getproperty(d::Descriptor, s::Symbol)
+    if s == :p
+        return getfield(d, s)
+    elseif s == :output
+        f = libgb.GrB_OUTP
+    elseif s == :mask
+        f = libgb.GrB_MASK
+    elseif s == :input1
+        f = libgb.GrB_INP0
+    elseif s == :input2
+        f = libgb.GrB_INP1
+    #elseif s == :nthreads
+        #f = libgb.GxB_DESCRIPTOR_NTHREADS
+    #elseif s == :chunk
+        #f = libgb.GxB_DESCRIPTOR_CHUNK
+    #elseif s == :axb_method
+        #f = libgb.GxB_AxB_METHOD
+    #elseif s == :sort
+        #f = libgb.GxB_SORT
+    else
+        error("type Descriptor has no field $s")
+    end
+    return libgb.GxB_Descriptor_get(d, f)
+end
+
+function Base.setproperty!(d::Descriptor, s::Symbol, x)
+    if s == :p
+        setfield!(d, s, v)
+    elseif s == :output
+        f = libgb.GrB_OUTP
+    elseif s == :mask
+        f = libgb.GrB_MASK
+    elseif s == :input1
+        f = libgb.GrB_INP0
+    elseif s == :input2
+        f = libgb.GrB_INP1
+    #elseif s == :nthreads
+        #f = libgb.GxB_DESCRIPTOR_NTHREADS
+    #elseif s == :chunk
+        #f = libgb.GxB_DESCRIPTOR_CHUNK
+    #elseif s == :axb_method
+        #f = libgb.GxB_AxB_METHOD
+    #elseif s == :sort
+        #f = libgb.GxB_SORT
+    else
+        error("type Descriptor has no field $s")
+    end
+    libgb.GrB_Descriptor_set(d, f, x)
+end
+
+function Base.:+(d1::Descriptor, d2::Descriptor)
+    d = Descriptor()
+    for f ∈ propertynames(d)
+        if getproperty(d1, f) != libgb.GxB_DEFAULT
+            setproperty!(d, f, getproperty(d1, f))
+        end
+        if getproperty(d2, f) != libgb.GxB_DEFAULT
+            setproperty!(d, f, getproperty(d2, f))
+        end
+    end
+    return d
+end
+
+function Base.propertynames(d::Descriptor)
+    return (
+    :output,
+    :mask,
+    :input1,
+    :input2,
+    #:nthreads,
+    #:chunk,
+    #:axb_method,
+    #:sort,
+    )
+end
+baremodule Descriptors
+import ..SSGrB: load_global, Descriptor
+import ..libgb: GB_Descriptor_opaque,
+GxB_DEFAULT,
+GrB_REPLACE,
+GrB_COMP,
+GrB_STRUCTURE,
+GrB_TRAN,
+GxB_GPU_ALWAYS,
+GxB_GPU_NEVER,
+GxB_AxB_GUSTAVSON,
+GxB_AxB_DOT,
+GxB_AxB_HASH,
+GxB_AxB_SAXPY
+import ..Types
+
+const DEFAULT = GxB_DEFAULT
+const REPLACE = GrB_REPLACE
+const COMPLEMENT = GrB_COMP
+const STRUCTURE = GrB_STRUCTURE
+const TRANSPOSE = GrB_TRAN
+const GUSTAVSON = GxB_AxB_GUSTAVSON
+const DOT = GxB_AxB_DOT
+const HASH = GxB_AxB_HASH
+const SAXPY = GxB_AxB_SAXPY
+
 end
 
 function loaddescriptors()
@@ -48,21 +153,28 @@ function loaddescriptors()
     "GrB_DESC_RSCT0",
     "GrB_DESC_RSCT0T1"]
     for name ∈ builtins
-        simple = string(name[5:end])
-        opname = Symbol(simple, "_T")
-        exportedname = Symbol(simple)
-        structquote = quote
-            struct $opname <: Abstract_GrB_Descriptor
-                p::Ptr{Cvoid}
-                $opname() = new(C_NULL)
-                $opname(p::Ptr{Cvoid}) = new(p)
-            end
-        end
-        @eval(Types, $structquote)
+        simple = Symbol(string(name[10:end]))
         constquote = quote
-            const $exportedname = Types.$opname(load_global($name))
+            const $simple = Descriptor(load_global($name, GB_Descriptor_opaque))
         end
         @eval(Descriptors, $constquote)
     end
 end
 isloaded(d::Abstract_GrB_Descriptor) = d.p !== C_NULL
+
+function printtest(::IO, M::Descriptor)
+    str = mktemp() do _, f
+        cf = Libc.FILE(f)
+        libgb.GxB_Descriptor_fprint(M, "", libgb.GxB_SHORT, cf)
+        flush(f)
+        seekstart(f)
+        x = read(f, String)
+        close(cf)
+        x
+    end
+    print(str)
+end
+
+function Base.show(io::IO, d::Descriptor)
+    printtest(io, d)
+end

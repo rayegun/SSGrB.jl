@@ -120,17 +120,25 @@ function arrrrgh()
 end
 
 macro kwargs(ex)
-    @capture(ex, (f_(xs__) = body_) | (function f_(xs__) body_ end))
-    result = quote
-        function $(esc(f))($(map(esc, xs)...);  mask = C_NULL, accum = C_NULL, desc = C_NULL)
-            kwargs = Dict(:mask => mask, :accum => accum, :desc => desc)
-            $(esc(body))
+    @capture(ex, (f_(xs__; xs2__) = body_) | (function f_(xs__; xs2__) body_ end) |
+    (f_(xs__) = body_) | (function f_(xs__) body_ end))
+    if xs2 !== nothing
+        result = quote
+            function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                $(esc(body))
+            end
+        end
+    else
+        result = quote
+            function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                $(esc(body))
+            end
         end
     end
-    #This is naughty, could lead to bugs I'm not sure.
     result.args[2].args[2].args[1] = __source__
     result.args[2].args[2].args[2] = __source__
-    result.args[2].args[2].args[4] = __source__
-
+    #These are rather naughty, and could lead to bugs.
+    # My goal is to keep @which and error line number happy.
+    #TODO: Have a wizard look at this.
     return result
 end

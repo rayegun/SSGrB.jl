@@ -109,12 +109,23 @@ function GrB_Descriptor_new(descriptor)
     @wraperror ccall((:GrB_Descriptor_new, libgraphblas), GrB_Info, (Ptr{GrB_Descriptor},), descriptor)
 end
 
+function GrB_Descriptor_new()
+    desc = Ref{GrB_Descriptor}()
+    GrB_Descriptor_new(desc)
+    return desc[]
+end
+
 function GrB_Descriptor_set(desc, field, val)
     @wraperror ccall((:GrB_Descriptor_set, libgraphblas), GrB_Info, (GrB_Descriptor, GrB_Desc_Field, GrB_Desc_Value), desc, field, val)
 end
 
 function GxB_Descriptor_get(val, desc, field)
     @wraperror ccall((:GxB_Descriptor_get, libgraphblas), GrB_Info, (Ptr{GrB_Desc_Value}, GrB_Descriptor, GrB_Desc_Field), val, desc, field)
+end
+function GxB_Descriptor_get(desc, field)
+    v = Ref{GrB_Desc_Value}()
+    GxB_Descriptor_get(v, desc, field)
+    return v[]
 end
 
 function GrB_Descriptor_free(descriptor)
@@ -1372,8 +1383,6 @@ function GrB_Vector_assign(w, mask, accum, u, I, ni, desc)
 end
 
 function GrB_Matrix_assign(C, Mask, accum, A, I, ni, J, nj, desc)
-I = tozerobased(I)
-J = tozerobased(J)
     I = tozerobased(I)
     J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_Matrix, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, A, I, ni, J, nj, desc)
@@ -1556,14 +1565,14 @@ function GxB_Matrix_assign_FC32(C, Mask, accum, x, I, ni, J, nj, desc)
     J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_assign_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC32_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
-scalarmatassign[ComplexF32] = GrB_Matrix_assign_FC32
+scalarmatassign[ComplexF32] = GxB_Matrix_assign_FC32
 
 function GxB_Matrix_assign_FC64(C, Mask, accum, x, I, ni, J, nj, desc)
     I = tozerobased(I)
     J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_assign_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC64_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
-scalarmatassign[ComplexF64] = GrB_Matrix_assign_FC64
+scalarmatassign[ComplexF64] = GxB_Matrix_assign_FC64
 
 function GrB_Matrix_assign_UDT(C, Mask, accum, x, I, ni, J, nj, desc)
     I = tozerobased(I)
@@ -1579,6 +1588,8 @@ function GrB_Matrix_apply(C, Mask, accum, op, A, desc)
     @wraperror ccall((:GrB_Matrix_apply, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_UnaryOp, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, A, desc)
 end
 
+const scalarvecapply1st = Dict{DataType, Function}()
+
 function GxB_Vector_apply_BinaryOp1st(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp1st, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GxB_Scalar, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
@@ -1586,58 +1597,73 @@ end
 function GrB_Vector_apply_BinaryOp1st_BOOL(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_BOOL, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Bool, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Bool] = GrB_Vector_apply_BinaryOp1st_BOOL
 
 function GrB_Vector_apply_BinaryOp1st_INT8(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_INT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Int8, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Int8] = GrB_Vector_apply_BinaryOp1st_INT8
 
 function GrB_Vector_apply_BinaryOp1st_INT16(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_INT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Int16, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Int16] = GrB_Vector_apply_BinaryOp1st_INT16
 
 function GrB_Vector_apply_BinaryOp1st_INT32(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_INT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Int32, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Int32] = GrB_Vector_apply_BinaryOp1st_INT32
 
 function GrB_Vector_apply_BinaryOp1st_INT64(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_INT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Int64, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Int64] = GrB_Vector_apply_BinaryOp1st_INT64
 
 function GrB_Vector_apply_BinaryOp1st_UINT8(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_UINT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, UInt8, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[UInt8] = GrB_Vector_apply_BinaryOp1st_UINT8
 
 function GrB_Vector_apply_BinaryOp1st_UINT16(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_UINT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, UInt16, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[UInt16] = GrB_Vector_apply_BinaryOp1st_UINT16
 
 function GrB_Vector_apply_BinaryOp1st_UINT32(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_UINT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, UInt32, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[UInt32] = GrB_Vector_apply_BinaryOp1st_UINT32
 
 function GrB_Vector_apply_BinaryOp1st_UINT64(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_UINT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, UInt64, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[UInt64] = GrB_Vector_apply_BinaryOp1st_UINT64
 
 function GrB_Vector_apply_BinaryOp1st_FP32(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_FP32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Cfloat, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Float32] = GrB_Vector_apply_BinaryOp1st_FP32
 
 function GrB_Vector_apply_BinaryOp1st_FP64(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_FP64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Cdouble, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[Float64] = GrB_Vector_apply_BinaryOp1st_FP64
 
 function GxB_Vector_apply_BinaryOp1st_FC32(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp1st_FC32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GxB_FC32_t, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[ComplexF32] = GxB_Vector_apply_BinaryOp1st_FC32
 
 function GxB_Vector_apply_BinaryOp1st_FC64(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp1st_FC64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GxB_FC64_t, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+scalarvecapply1st[ComplexF64] = GxB_Vector_apply_BinaryOp1st_FC64
 
 function GrB_Vector_apply_BinaryOp1st_UDT(w, mask, accum, op, x, u, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp1st_UDT, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, Ptr{Cvoid}, GrB_Vector, GrB_Descriptor), w, mask, accum, op, x, u, desc)
 end
+
+const scalarvecapply2nd = Dict{DataType, Function}()
 
 function GxB_Vector_apply_BinaryOp2nd(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp2nd, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, GxB_Scalar, GrB_Descriptor), w, mask, accum, op, u, y, desc)
@@ -1646,58 +1672,73 @@ end
 function GrB_Vector_apply_BinaryOp2nd_BOOL(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_BOOL, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Bool, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Bool] = GrB_Vector_apply_BinaryOp2nd_BOOL
 
 function GrB_Vector_apply_BinaryOp2nd_INT8(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_INT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Int8, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Int8] = GrB_Vector_apply_BinaryOp2nd_INT8
 
 function GrB_Vector_apply_BinaryOp2nd_INT16(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_INT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Int16, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Int16] = GrB_Vector_apply_BinaryOp2nd_INT16
 
 function GrB_Vector_apply_BinaryOp2nd_INT32(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_INT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Int32, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Int32] = GrB_Vector_apply_BinaryOp2nd_INT32
 
 function GrB_Vector_apply_BinaryOp2nd_INT64(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_INT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Int64, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Int64] = GrB_Vector_apply_BinaryOp2nd_INT64
 
 function GrB_Vector_apply_BinaryOp2nd_UINT8(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_UINT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, UInt8, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[UInt8] = GrB_Vector_apply_BinaryOp2nd_UINT8
 
 function GrB_Vector_apply_BinaryOp2nd_UINT16(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_UINT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, UInt16, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[UInt16] = GrB_Vector_apply_BinaryOp2nd_UINT16
 
 function GrB_Vector_apply_BinaryOp2nd_UINT32(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_UINT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, UInt32, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[UInt32] = GrB_Vector_apply_BinaryOp2nd_UINT32
 
 function GrB_Vector_apply_BinaryOp2nd_UINT64(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_UINT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, UInt64, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[UInt64] = GrB_Vector_apply_BinaryOp2nd_UINT64
 
 function GrB_Vector_apply_BinaryOp2nd_FP32(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_FP32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Cfloat, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Float32] = GrB_Vector_apply_BinaryOp2nd_FP32
 
 function GrB_Vector_apply_BinaryOp2nd_FP64(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_FP64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Cdouble, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[Float64] = GrB_Vector_apply_BinaryOp2nd_FP64
 
 function GxB_Vector_apply_BinaryOp2nd_FC32(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp2nd_FC32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, GxB_FC32_t, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[ComplexF32] = GxB_Vector_apply_BinaryOp2nd_FC32
 
 function GxB_Vector_apply_BinaryOp2nd_FC64(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GxB_Vector_apply_BinaryOp2nd_FC64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, GxB_FC64_t, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+scalarvecapply2nd[ComplexF64] = GxB_Vector_apply_BinaryOp2nd_FC64
 
 function GrB_Vector_apply_BinaryOp2nd_UDT(w, mask, accum, op, u, y, desc)
     @wraperror ccall((:GrB_Vector_apply_BinaryOp2nd_UDT, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Vector, Ptr{Cvoid}, GrB_Descriptor), w, mask, accum, op, u, y, desc)
 end
+
+const scalarmatapply1st = Dict{DataType, Function}()
 
 function GxB_Matrix_apply_BinaryOp1st(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp1st, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GxB_Scalar, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
@@ -1706,58 +1747,73 @@ end
 function GrB_Matrix_apply_BinaryOp1st_BOOL(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Bool, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Bool] = GrB_Matrix_apply_BinaryOp1st_BOOL
 
 function GrB_Matrix_apply_BinaryOp1st_INT8(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_INT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Int8, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Int8] = GrB_Matrix_apply_BinaryOp1st_INT8
 
 function GrB_Matrix_apply_BinaryOp1st_INT16(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_INT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Int16, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Int16] = GrB_Matrix_apply_BinaryOp1st_INT16
 
 function GrB_Matrix_apply_BinaryOp1st_INT32(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_INT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Int32, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Int32] = GrB_Matrix_apply_BinaryOp1st_INT32
 
 function GrB_Matrix_apply_BinaryOp1st_INT64(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_INT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Int64, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Int64] = GrB_Matrix_apply_BinaryOp1st_INT64
 
 function GrB_Matrix_apply_BinaryOp1st_UINT8(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, UInt8, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[UInt8] = GrB_Matrix_apply_BinaryOp1st_UINT8
 
 function GrB_Matrix_apply_BinaryOp1st_UINT16(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, UInt16, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[UInt16] = GrB_Matrix_apply_BinaryOp1st_UINT16
 
 function GrB_Matrix_apply_BinaryOp1st_UINT32(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, UInt32, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[UInt32] = GrB_Matrix_apply_BinaryOp1st_UINT32
 
 function GrB_Matrix_apply_BinaryOp1st_UINT64(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, UInt64, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[UInt64] = GrB_Matrix_apply_BinaryOp1st_UINT64
 
 function GrB_Matrix_apply_BinaryOp1st_FP32(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_FP32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Cfloat, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Float32] = GrB_Matrix_apply_BinaryOp1st_FP32
 
 function GrB_Matrix_apply_BinaryOp1st_FP64(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_FP64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Cdouble, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[Float64] = GrB_Matrix_apply_BinaryOp1st_FP64
 
 function GxB_Matrix_apply_BinaryOp1st_FC32(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp1st_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GxB_FC32_t, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[ComplexF32] = GxB_Matrix_apply_BinaryOp1st_FC32
 
 function GxB_Matrix_apply_BinaryOp1st_FC64(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp1st_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GxB_FC64_t, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+scalarmatapply1st[ComplexF64] = GxB_Matrix_apply_BinaryOp1st_FC64
 
 function GrB_Matrix_apply_BinaryOp1st_UDT(C, Mask, accum, op, x, A, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp1st_UDT, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, Ptr{Cvoid}, GrB_Matrix, GrB_Descriptor), C, Mask, accum, op, x, A, desc)
 end
+
+const scalarmatapply2nd = Dict{DataType, Function}()
 
 function GxB_Matrix_apply_BinaryOp2nd(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp2nd, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, GxB_Scalar, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
@@ -1766,54 +1822,67 @@ end
 function GrB_Matrix_apply_BinaryOp2nd_BOOL(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Bool, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Bool] = GrB_Matrix_apply_BinaryOp2nd_BOOL
 
 function GrB_Matrix_apply_BinaryOp2nd_INT8(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_INT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Int8, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Int8] = GrB_Matrix_apply_BinaryOp2nd_INT8
 
 function GrB_Matrix_apply_BinaryOp2nd_INT16(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_INT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Int16, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Int16] = GrB_Matrix_apply_BinaryOp2nd_INT16
 
 function GrB_Matrix_apply_BinaryOp2nd_INT32(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_INT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Int32, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Int32] = GrB_Matrix_apply_BinaryOp2nd_INT32
 
 function GrB_Matrix_apply_BinaryOp2nd_INT64(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_INT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Int64, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Int64] = GrB_Matrix_apply_BinaryOp2nd_INT64
 
 function GrB_Matrix_apply_BinaryOp2nd_UINT8(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, UInt8, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[UInt8] = GrB_Matrix_apply_BinaryOp2nd_UINT8
 
 function GrB_Matrix_apply_BinaryOp2nd_UINT16(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, UInt16, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[UInt16] = GrB_Matrix_apply_BinaryOp2nd_UINT16
 
 function GrB_Matrix_apply_BinaryOp2nd_UINT32(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, UInt32, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[UInt32] = GrB_Matrix_apply_BinaryOp2nd_UINT32
 
 function GrB_Matrix_apply_BinaryOp2nd_UINT64(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, UInt64, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[UInt64] = GrB_Matrix_apply_BinaryOp2nd_UINT64
 
 function GrB_Matrix_apply_BinaryOp2nd_FP32(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_FP32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Cfloat, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Float32] = GrB_Matrix_apply_BinaryOp2nd_FP32
 
 function GrB_Matrix_apply_BinaryOp2nd_FP64(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_FP64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Cdouble, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[Float64] = GrB_Matrix_apply_BinaryOp2nd_FP64
 
 function GxB_Matrix_apply_BinaryOp2nd_FC32(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp2nd_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, GxB_FC32_t, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[ComplexF32] = GxB_Matrix_apply_BinaryOp2nd_FC32
 
 function GxB_Matrix_apply_BinaryOp2nd_FC64(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GxB_Matrix_apply_BinaryOp2nd_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, GxB_FC64_t, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
 end
+scalarmatapply2nd[ComplexF64] = GxB_Matrix_apply_BinaryOp2nd_FC64
 
 function GrB_Matrix_apply_BinaryOp2nd_UDT(C, Mask, accum, op, A, y, desc)
     @wraperror ccall((:GrB_Matrix_apply_BinaryOp2nd_UDT, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, Ptr{Cvoid}, GrB_Descriptor), C, Mask, accum, op, A, y, desc)
@@ -1835,113 +1904,141 @@ function GrB_Matrix_reduce_BinaryOp(w, mask, accum, op, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_BinaryOp, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_BinaryOp, GrB_Matrix, GrB_Descriptor), w, mask, accum, op, A, desc)
 end
 
+const scalarvecreduce = Dict{DataType, Function}()
+
 function GrB_Vector_reduce_BOOL(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_BOOL, libgraphblas), GrB_Info, (Ptr{Bool}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[Bool] = GrB_Vector_reduce_BOOL
 
 function GrB_Vector_reduce_INT8(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_INT8, libgraphblas), GrB_Info, (Ptr{Int8}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[Int8] = GrB_Vector_reduce_INT8
 
 function GrB_Vector_reduce_UINT8(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_UINT8, libgraphblas), GrB_Info, (Ptr{UInt8}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[UInt8] = GrB_Vector_reduce_UINT8
 
 function GrB_Vector_reduce_INT16(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_INT16, libgraphblas), GrB_Info, (Ptr{Int16}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[Int16] = GrB_Vector_reduce_INT16
 
 function GrB_Vector_reduce_UINT16(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_UINT16, libgraphblas), GrB_Info, (Ptr{UInt16}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[UInt16] = GrB_Vector_reduce_UINT16
 
 function GrB_Vector_reduce_INT32(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_INT32, libgraphblas), GrB_Info, (Ptr{Int32}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[Int32] = GrB_Vector_reduce_INT32
 
 function GrB_Vector_reduce_UINT32(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_UINT32, libgraphblas), GrB_Info, (Ptr{UInt32}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[UInt32] = GrB_Vector_reduce_UINT32
 
 function GrB_Vector_reduce_INT64(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_INT64, libgraphblas), GrB_Info, (Ptr{Int64}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[Int64] = GrB_Vector_reduce_INT64
 
 function GrB_Vector_reduce_UINT64(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_UINT64, libgraphblas), GrB_Info, (Ptr{UInt64}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[UInt64] = GrB_Vector_reduce_UINT64
 
 function GrB_Vector_reduce_FP32(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_FP32, libgraphblas), GrB_Info, (Ptr{Cfloat}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
-
+scalarvecreduce[Float32] = GrB_Vector_reduce_FP32
 function GrB_Vector_reduce_FP64(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_FP64, libgraphblas), GrB_Info, (Ptr{Cdouble}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
-
+scalarvecreduce[Float64] = GrB_Vector_reduce_FP64
 function GxB_Vector_reduce_FC32(c, accum, monoid, u, desc)
     @wraperror ccall((:GxB_Vector_reduce_FC32, libgraphblas), GrB_Info, (Ptr{GxB_FC32_t}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[ComplexF32] = GxB_Vector_reduce_FC32
 
 function GxB_Vector_reduce_FC64(c, accum, monoid, u, desc)
     @wraperror ccall((:GxB_Vector_reduce_FC64, libgraphblas), GrB_Info, (Ptr{GxB_FC64_t}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
+scalarvecreduce[ComplexF64] = GxB_Vector_reduce_FC64
 
 function GrB_Vector_reduce_UDT(c, accum, monoid, u, desc)
     @wraperror ccall((:GrB_Vector_reduce_UDT, libgraphblas), GrB_Info, (Ptr{Cvoid}, GrB_BinaryOp, GrB_Monoid, GrB_Vector, GrB_Descriptor), c, accum, monoid, u, desc)
 end
 
+const scalarmatreduce = Dict{DataType, Function}()
+
 function GrB_Matrix_reduce_BOOL(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_BOOL, libgraphblas), GrB_Info, (Ptr{Bool}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Bool] = GrB_Matrix_reduce_BOOL
 
 function GrB_Matrix_reduce_INT8(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_INT8, libgraphblas), GrB_Info, (Ptr{Int8}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Int8] = GrB_Matrix_reduce_INT8
 
 function GrB_Matrix_reduce_UINT8(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_UINT8, libgraphblas), GrB_Info, (Ptr{UInt8}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[UInt8] = GrB_Matrix_reduce_UINT8
 
 function GrB_Matrix_reduce_INT16(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_INT16, libgraphblas), GrB_Info, (Ptr{Int16}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Int16] = GrB_Matrix_reduce_INT16
 
 function GrB_Matrix_reduce_UINT16(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_UINT16, libgraphblas), GrB_Info, (Ptr{UInt16}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[UInt16] = GrB_Matrix_reduce_UINT16
 
 function GrB_Matrix_reduce_INT32(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_INT32, libgraphblas), GrB_Info, (Ptr{Int32}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Int32] = GrB_Matrix_reduce_INT32
 
 function GrB_Matrix_reduce_UINT32(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_UINT32, libgraphblas), GrB_Info, (Ptr{UInt32}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[UInt32] = GrB_Matrix_reduce_UINT32
 
 function GrB_Matrix_reduce_INT64(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_INT64, libgraphblas), GrB_Info, (Ptr{Int64}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Int64] = GrB_Matrix_reduce_INT64
 
 function GrB_Matrix_reduce_UINT64(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_UINT64, libgraphblas), GrB_Info, (Ptr{UInt64}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[UInt64] = GrB_Matrix_reduce_UINT64
 
 function GrB_Matrix_reduce_FP32(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_FP32, libgraphblas), GrB_Info, (Ptr{Cfloat}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Float32] = GrB_Matrix_reduce_FP32
 
 function GrB_Matrix_reduce_FP64(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_FP64, libgraphblas), GrB_Info, (Ptr{Cdouble}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[Float64] = GrB_Matrix_reduce_FP64
 
 function GxB_Matrix_reduce_FC32(c, accum, monoid, A, desc)
     @wraperror ccall((:GxB_Matrix_reduce_FC32, libgraphblas), GrB_Info, (Ptr{GxB_FC32_t}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[ComplexF32] = GxB_Matrix_reduce_FC32
 
 function GxB_Matrix_reduce_FC64(c, accum, monoid, A, desc)
     @wraperror ccall((:GxB_Matrix_reduce_FC64, libgraphblas), GrB_Info, (Ptr{GxB_FC64_t}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)
 end
+scalarmatreduce[ComplexF64] = GxB_Matrix_reduce_FC64
 
 function GrB_Matrix_reduce_UDT(c, accum, monoid, A, desc)
     @wraperror ccall((:GrB_Matrix_reduce_UDT, libgraphblas), GrB_Info, (Ptr{Cvoid}, GrB_BinaryOp, GrB_Monoid, GrB_Matrix, GrB_Descriptor), c, accum, monoid, A, desc)

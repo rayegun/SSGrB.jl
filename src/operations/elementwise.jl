@@ -1,7 +1,4 @@
-function emul!(
-    w::GBVector, u::GBVector, v::GBVector, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-    )
+@kwargs function emul!(w::GBVector, u::GBVector, v::GBVector, operator = nothing)
     size(w) == size(u) == size(v) || throw(DimensionMismatch())
     if operator === nothing
         operator = getbinaryop(eltype(w))
@@ -23,23 +20,17 @@ function emul!(
     end
 end
 
-function emul(
-    u::GBVector, v::GBVector, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc= C_NULL
-    )
+@kwargs function emul(u::GBVector, v::GBVector, operator = nothing)
     if operator !== nothing
         t = ztype(operator)
     else
         t = optype(eltype(u), eltype(v))
     end
     w = GBVector{t}(size(u))
-    return emul!(w, u, v, operator, mask = mask, accum = accum, desc = desc)
+    return emul!(w, u, v, operator; mask , accum, desc)
 end
 
-function emul!(
-    C::GBMatrix, A::GBMatrix, B::GBMatrix, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-    )
+@kwargs function emul!(C::GBMatrix, A::GBMatrix, B::GBMatrix, operator = nothing)
     size(C) == size(A) == size(B) || throw(DimensionMismatch())
     if operator === nothing
         operator = getbinaryop(eltype(C))
@@ -57,27 +48,21 @@ function emul!(
         libgb.GrB_Vector_eWiseMult_BinaryOp(C, mask, accum, operator, A, B, desc)
         return C
     else
-        error("Unreachable")
+        error("Unreachable") #TODO: Do better than this.
     end
 end
 
-function emul(
-    A::GBMatrix, B::GBMatrix, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc= C_NULL
-    )
+function emul(A::GBMatrix, B::GBMatrix, operator = nothing)
     if operator !== nothing
         t = ztype(operator)
     else
         t = optype(eltype(A), eltype(B))
     end
     C = GBVector{t}(size(A))
-    return emul!(C, A, B, operator, mask = mask, accum = accum, desc = desc)
+    return emul!(C, A, B, operator; mask, accum, desc)
 end
 
-function eadd!(
-    w::GBVector, u::GBVector, v::GBVector, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-    )
+@kwargs function eadd!(w::GBVector, u::GBVector, v::GBVector, operator = nothing)
     size(w) == size(u) == size(v) || throw(DimensionMismatch())
     if operator === nothing
         operator = getbinaryop(eltype(w))
@@ -99,23 +84,17 @@ function eadd!(
     end
 end
 
-function eadd(
-    u::GBVector, v::GBVector, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc= C_NULL
-    )
+@kwargs function eadd(u::GBVector, v::GBVector, operator = nothing)
     if operator !== nothing
         t = ztype(operator)
     else
         t = optype(eltype(u), eltype(v))
     end
     w = GBVector{t}(size(u))
-    return eadd!(w, u, v, operator, mask = mask, accum = accum, desc = desc)
+    return eadd!(w, u, v, operator; mask, accum, desc)
 end
 
-function eadd!(
-    C::GBMatrix, A::GBMatrix, B::GBMatrix, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-    )
+@kwargs function eadd!(C::GBMatrix, A::GBMatrix, B::GBMatrix, operator = nothing)
     size(C) == size(A) == size(B) || throw(DimensionMismatch())
     if operator === nothing
         operator = getbinaryop(eltype(C))
@@ -137,22 +116,19 @@ function eadd!(
     end
 end
 
-function eadd(
-    A::GBMatrix, B::GBMatrix, operator = nothing;
-    mask = C_NULL, accum = C_NULL, desc= C_NULL
-    )
+@kwargs function eadd(A::GBMatrix, B::GBMatrix, operator = nothing)
     if operator !== nothing
         t = ztype(operator)
     else
         t = optype(eltype(A), eltype(B))
     end
     C = GBVector{t}(size(A))
-    return eadd!(C, A, B, operator, mask = mask, accum = accum, desc = desc)
+    return eadd!(C, A, B, operator; mask, accum, desc)
 end
 
 
-Base.broadcasted(::typeof(+), u::GBVector, v::GBVector) = eadd(u, v)
-Base.broadcasted(::typeof(*), u::GBVector, v::GBVector) = emul(u, v)
+@kwargs Base.broadcasted(::typeof(+), u::GBVector, v::GBVector) = eadd(u, v)
+@kwargs Base.broadcasted(::typeof(*), u::GBVector, v::GBVector) = emul(u, v)
 
-Base.broadcasted(::typeof(+), A::GBMatrix, B::GBMatrix) = eadd(A, B)
-Base.broadcasted(::typeof(*), A::GBMatrix, B::GBMatrix) = emul(A, B)
+@kwargs Base.broadcasted(::typeof(+), A::GBMatrix, B::GBMatrix) = eadd(A, B)
+@kwargs Base.broadcasted(::typeof(*), A::GBMatrix, B::GBMatrix) = emul(A, B)
