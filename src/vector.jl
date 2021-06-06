@@ -85,7 +85,8 @@ function extract(u::GBVector, I, ni = nothing; mask = C_NULL, accum = C_NULL, de
     elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
         wlen = length(I[1]:I[3]:I[2])
         #For backwards we need the input incremenet to be positive and fix for zero-based.
-        I[3] = -I[3] + 1 
+        I[3] < 0 && I[3] = -I[3]
+        I[3] += 1
     else
         ni = length(I)
         wlen = ni
@@ -94,7 +95,7 @@ function extract(u::GBVector, I, ni = nothing; mask = C_NULL, accum = C_NULL, de
     return extract!(w, u, I, ni; mask = mask, accum = accum, desc = desc)
 end
 
-function subassign!(w::GBVector, u, I; mask = C_NULL, accum = C_NULL, desc = C_NULL)
+function subassign!(w::GBVector, u, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
     if I == ALL
         ni = 1
     elseif I isa Vector
@@ -108,7 +109,7 @@ function subassign!(w::GBVector, u, I; mask = C_NULL, accum = C_NULL, desc = C_N
     end
 end
 
-function assign!(w::GBVector, u, I; mask = C_NULL, accum = C_NULL, desc = C_NULL)
+function assign!(w::GBVector, u, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
     if I == ALL
         ni = 1
     elseif I isa Vector
@@ -125,13 +126,12 @@ end
 Base.getindex(u::GBVector, ::Colon) = extract(u, ALL)
 Base.getindex(u::GBVector, i::Vector) = extract(u, i)
 function Base.getindex(u::GBVector, i::UnitRange)
-    i.start <= i.stop || throw(BoundsError(u, i))
     return extract(u, [i.start, i.stop], libgb.GxB_RANGE)
 end
 function Base.getindex(u::GBVector, i::StepRange)
-    if i.start <= i.stop && i.step > 0
+    if i.step > 0
         return extract(u, [i.start, i.stop, i.step], libgb.GxB_STRIDE)
-    elseif i.start >= i.stop && i.step < 0
+    elseif i.step < 0
         return extract(u, [i.start, i.stop, i.step], libgb.GxB_BACKWARDS)
     else
         throw(BoundsError(u, i))
