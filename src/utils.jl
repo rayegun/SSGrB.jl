@@ -118,3 +118,19 @@ isGxB(name) = name[1:3] == "GxB"
 function arrrrgh()
     eval(:(Base.show(io::IO, a::Unsigned) = print(io, Int(a))))
 end
+
+macro kwargs(ex)
+    @capture(ex, (f_(xs__) = body_) | (function f_(xs__) body_ end))
+    result = quote
+        function $(esc(f))($(map(esc, xs)...);  mask = C_NULL, accum = C_NULL, desc = C_NULL)
+            kwargs = Dict(:mask => mask, :accum => accum, :desc => desc)
+            $(esc(body))
+        end
+    end
+    #This is naughty, could lead to bugs I'm not sure.
+    result.args[2].args[2].args[1] = __source__
+    result.args[2].args[2].args[2] = __source__
+    result.args[2].args[2].args[4] = __source__
+
+    return result
+end

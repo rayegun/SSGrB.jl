@@ -1168,14 +1168,20 @@ function GxB_Vector_subassign(w, mask, accum, u, I, ni, desc)
 end
 
 function GxB_Matrix_subassign(C, Mask, accum, A, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_Matrix, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, A, I, ni, J, nj, desc)
 end
 
 function GxB_Col_subassign(C, mask, accum, u, I, ni, j, desc)
+    I = tozerobased(I)
+    j = tozerobased(j)
     @wraperror ccall((:GxB_Col_subassign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, GrB_BinaryOp, GrB_Vector, Ptr{GrB_Index}, GrB_Index, GrB_Index, GrB_Descriptor), C, mask, accum, u, I, ni, j, desc)
 end
 
 function GxB_Row_subassign(C, mask, accum, u, i, J, nj, desc)
+    i = tozerobased(i)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Row_subassign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, GrB_BinaryOp, GrB_Vector, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, mask, accum, u, i, J, nj, desc)
 end
 
@@ -1262,214 +1268,306 @@ function GxB_Vector_subassign_UDT(w, mask, accum, x, I, ni, desc)
 end
 
 function GxB_Matrix_subassign_BOOL(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Bool, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Bool] = GxB_Matrix_subassign_BOOL
 
 function GxB_Matrix_subassign_INT8(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_INT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int8, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Int8] = GxB_Matrix_subassign_INT8
 
 function GxB_Matrix_subassign_UINT8(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt8, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[UInt8] = GxB_Matrix_subassign_UINT8
 
 function GxB_Matrix_subassign_INT16(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_INT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int16, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Int16] = GxB_Matrix_subassign_INT16
 
 function GxB_Matrix_subassign_UINT16(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt16, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[UInt16] = GxB_Matrix_subassign_UINT16
 
 function GxB_Matrix_subassign_INT32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_INT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int32, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Int32] = GxB_Matrix_subassign_INT32
 
 function GxB_Matrix_subassign_UINT32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt32, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[UInt32] = GxB_Matrix_subassign_UINT32
 
 function GxB_Matrix_subassign_INT64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_INT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int64, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Int64] = GxB_Matrix_subassign_INT64
 
 function GxB_Matrix_subassign_UINT64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt64, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[UInt64] = GxB_Matrix_subassign_UINT64
 
 function GxB_Matrix_subassign_FP32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_FP32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Cfloat, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Float32] = GxB_Matrix_subassign_FP32
 
 function GxB_Matrix_subassign_FP64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_FP64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Cdouble, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[Float64] = GxB_Matrix_subassign_FP64
 
 function GxB_Matrix_subassign_FC32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC32_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[ComplexF32] = GxB_Matrix_subassign_FC32
 
 function GxB_Matrix_subassign_FC64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC64_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 scalarmatsubassign[ComplexF64] = GxB_Matrix_subassign_FC64
 
 function GxB_Matrix_subassign_UDT(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_subassign_UDT, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Ptr{Cvoid}, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 
 const scalarvecassign = Dict{DataType, Function}()
-
+const scalarmatassign = Dict{DataType, Function}()
 function GrB_Vector_assign(w, mask, accum, u, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GrB_Vector, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, u, I, ni, desc)
 end
 
 function GrB_Matrix_assign(C, Mask, accum, A, I, ni, J, nj, desc)
+I = tozerobased(I)
+J = tozerobased(J)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GrB_Matrix, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, A, I, ni, J, nj, desc)
 end
 
 function GrB_Col_assign(C, mask, accum, u, I, ni, j, desc)
+    I = tozerobased(I)
+    j = tozerobased(j)
     @wraperror ccall((:GrB_Col_assign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, GrB_BinaryOp, GrB_Vector, Ptr{GrB_Index}, GrB_Index, GrB_Index, GrB_Descriptor), C, mask, accum, u, I, ni, j, desc)
 end
 
 function GrB_Row_assign(C, mask, accum, u, i, J, nj, desc)
+    i = tozerobased(i)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Row_assign, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Vector, GrB_BinaryOp, GrB_Vector, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, mask, accum, u, i, J, nj, desc)
 end
 
 function GrB_Vector_assign_BOOL(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_BOOL, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Bool, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Bool] = GrB_Vector_assign_BOOL
 
 function GrB_Vector_assign_INT8(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_INT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Int8, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Int8] = GrB_Vector_assign_INT8
 
 function GrB_Vector_assign_UINT8(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_UINT8, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, UInt8, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[UInt8] = GrB_Vector_assign_UINT8
 
 function GrB_Vector_assign_INT16(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_INT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Int16, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Int16] = GrB_Vector_assign_INT16
 
 function GrB_Vector_assign_UINT16(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_UINT16, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, UInt16, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[UInt16] = GrB_Vector_assign_UINT16
 
 function GrB_Vector_assign_INT32(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_INT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Int32, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Int32] = GrB_Vector_assign_INT32
 
 function GrB_Vector_assign_UINT32(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_UINT32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, UInt32, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[UInt32] = GrB_Vector_assign_UINT32
 
 function GrB_Vector_assign_INT64(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_INT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Int64, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Int64] = GrB_Vector_assign_INT64
 
 function GrB_Vector_assign_UINT64(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_UINT64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, UInt64, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[UInt64] = GrB_Vector_assign_UINT64
 
 function GrB_Vector_assign_FP32(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_FP32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Cfloat, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Float32] = GrB_Vector_assign_FP32
 
 function GrB_Vector_assign_FP64(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_FP64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Cdouble, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[Float64] = GrB_Vector_assign_FP64
 
 function GxB_Vector_assign_FC32(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:xrB_Vector_assign_FC32, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GxB_FC32_t, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[ComplexF32] = GxB_Vector_assign_FC32
 
 function GxB_Vector_assign_FC64(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GxB_Vector_assign_FC64, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, GxB_FC64_t, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 scalarvecassign[ComplexF64] = GxB_Vector_assign_FC64
 
 function GrB_Vector_assign_UDT(w, mask, accum, x, I, ni, desc)
+    I = tozerobased(I)
     @wraperror ccall((:GrB_Vector_assign_UDT, libgraphblas), GrB_Info, (GrB_Vector, GrB_Vector, GrB_BinaryOp, Ptr{Cvoid}, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), w, mask, accum, x, I, ni, desc)
 end
 
 function GrB_Matrix_assign_BOOL(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_BOOL, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Bool, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Bool] = GrB_Matrix_assign_BOOL
 
 function GrB_Matrix_assign_INT8(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_INT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int8, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Int8] = GrB_Matrix_assign_INT8
 
 function GrB_Matrix_assign_UINT8(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_UINT8, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt8, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[UInt8] = GrB_Matrix_assign_UINT8
 
 function GrB_Matrix_assign_INT16(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_INT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int16, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Int16] = GrB_Matrix_assign_INT16
 
 function GrB_Matrix_assign_UINT16(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_UINT16, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt16, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[UInt16] = GrB_Matrix_assign_UINT16
 
 function GrB_Matrix_assign_INT32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_INT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int32, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Int32] = GrB_Matrix_assign_INT32
 
 function GrB_Matrix_assign_UINT32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_UINT32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt32, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[UInt32] = GrB_Matrix_assign_UINT32
 
 function GrB_Matrix_assign_INT64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_INT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Int64, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Int64] = GrB_Matrix_assign_INT64
 
 function GrB_Matrix_assign_UINT64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_UINT64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, UInt64, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[UInt64] = GrB_Matrix_assign_UINT64
 
 function GrB_Matrix_assign_FP32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_FP32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Cfloat, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Float32] = GrB_Matrix_assign_FP32
 
 function GrB_Matrix_assign_FP64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_FP64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Cdouble, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[Float64] = GrB_Matrix_assign_FP64
 
 function GxB_Matrix_assign_FC32(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_assign_FC32, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC32_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[ComplexF32] = GrB_Matrix_assign_FC32
 
 function GxB_Matrix_assign_FC64(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GxB_Matrix_assign_FC64, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, GxB_FC64_t, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
+scalarmatassign[ComplexF64] = GrB_Matrix_assign_FC64
 
 function GrB_Matrix_assign_UDT(C, Mask, accum, x, I, ni, J, nj, desc)
+    I = tozerobased(I)
+    J = tozerobased(J)
     @wraperror ccall((:GrB_Matrix_assign_UDT, libgraphblas), GrB_Info, (GrB_Matrix, GrB_Matrix, GrB_BinaryOp, Ptr{Cvoid}, Ptr{GrB_Index}, GrB_Index, Ptr{GrB_Index}, GrB_Index, GrB_Descriptor), C, Mask, accum, x, I, ni, J, nj, desc)
 end
 

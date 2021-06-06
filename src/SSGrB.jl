@@ -2,6 +2,7 @@ module SSGrB
 using Libdl: dlsym
 using SSGraphBLAS_jll
 using SparseArrays
+using MacroTools
 import LinearAlgebra: mul!
 export GBScalar, GBVector, GBMatrix, build, findnz, nnz, libgb, clear, BinaryOps, UnaryOps,
     Monoids, Semirings, Descriptors, SelectOps
@@ -25,6 +26,7 @@ include("semirings.jl")
 using .Semirings
 include("selectops.jl")
 using .SelectOps
+include("indexutils.jl")
 include("scalar.jl")
 include("vector.jl")
 include("matrix.jl")

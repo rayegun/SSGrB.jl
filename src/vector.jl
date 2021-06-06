@@ -62,80 +62,59 @@ for T ∈ valid_vec
     end
 end
 
-function extract!(
-    w::GBVector, u::GBVector, I, ni = length(I);
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-    )
-    if I != ALL
-        I = Vector{libgb.GrB_Index}(I)
+#Determine the length of output vector for indexing operations.
+function wlength(u, I)
+    if I == ALL
+        wlen = size(u)
+    else
+        wlen = length(I)
     end
+    return wlen
+end
+
+#Determine the index vector depending on type and contents of I.
+
+@kwargs function extract!(w::GBVector, u::GBVector, I)
+    I, ni = idx(I)
     libgb.GrB_Vector_extract(w, mask, accum, u, I, ni, desc)
     return w
 end
 
-function extract(u::GBVector, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
-    if I == ALL #If we've got ALL, ni does not, and the size of the output is the size of the input.
-        wlen = size(u)
-        ni = 1
-    elseif ni == libgb.GxB_RANGE && length(I) == 2 
-        wlen = length(I[1]:I[2])
-    elseif ni == libgb.GxB_STRIDE && length(I) == 3 #SSGrB accepts ranges as [Begin, End, Inc]
-        wlen = length(I[1]:I[3]:I[2])
-        I[3] += 1 #We must be sure the increment remains the same when we go to zero-based
-    elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
-        wlen = length(I[1]:I[3]:I[2])
-        #For backwards we need the input incremenet to be positive and fix for zero-based.
-        I[3] < 0 && I[3] = -I[3]
-        I[3] += 1
-    else
-        ni = length(I)
-        wlen = ni
-    end
+@kwargs function extract(u::GBVector, I)
+    wlen = wlength(u, I)
     w = similar(u, wlen)
-    return extract!(w, u, I, ni; mask = mask, accum = accum, desc = desc)
+    return extract!(w, u, I; mask, accum, desc)
 end
 
-function subassign!(w::GBVector, u, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
-    if I == ALL
-        ni = 1
-    elseif I isa Vector
-        I = Vector{libgb.GrB_Index}(I)
-        ni = length(I)
-    end
-    if u isa Vector
+@kwargs Base.getindex(u::GBVector, ::Colon) = extract(u, ALL; mask, accum, desc)
+@kwargs function Base.getindex(u::GBVector, i::Union{Vector, UnitRange, StepRange})
+    return extract(u, i; mask, accum, desc)
+end
+
+@kwargs function subassign!(w::GBVector, u, I)
+    I, ni = idx(I)
+    u isa Vector && (u = GBVector(u))
+    if u isa GBVector
         libgb.GxB_Vector_subassign(w, mask, accum, u, I, ni, desc)
     else
-        libgb.scalarvecsubassign[typeof(u)](w, mask, accum, u, I, ni, desc)
+        libgb.scalarvecsubassign[eltype(u)](w, mask, accum, u, I, ni, desc)
     end
 end
 
-function assign!(w::GBVector, u, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
-    if I == ALL
-        ni = 1
-    elseif I isa Vector
-        I = Vector{libgb.GrB_Index}(I)
-        ni = length(I)
-    end
-    if u isa Vector
+@kwargs function assign!(w::GBVector, u, I)
+    I, ni = idx(I)
+    u isa Vector && (u = GBVector(u))
+    if u isa GBVector
         libgb.GrB_Vector_assign(w, mask, accum, u, I, ni, desc)
     else
-        libgb.scalarvecassign[typeof(u)](w, mask, accum, u, I, ni, desc)
+        libgb.scalarvecassign[eltype(u)](w, mask, accum, u, I, ni, desc)
     end
 end
 
-Base.getindex(u::GBVector, ::Colon) = extract(u, ALL)
-Base.getindex(u::GBVector, i::Vector) = extract(u, i)
-function Base.getindex(u::GBVector, i::UnitRange)
-    return extract(u, [i.start, i.stop], libgb.GxB_RANGE)
-end
-function Base.getindex(u::GBVector, i::StepRange)
-    if i.step > 0
-        return extract(u, [i.start, i.stop, i.step], libgb.GxB_STRIDE)
-    elseif i.step < 0
-        return extract(u, [i.start, i.stop, i.step], libgb.GxB_BACKWARDS)
-    else
-        throw(BoundsError(u, i))
-    end
+#setindex! uses subassign rather than assign. This behavior may change in the future.
+@kwargs Base.setindex!(u::GBVector, x, ::Colon) = subassign!(u, x, ALL; mask, accum, desc)
+@kwargs function Base.setindex!(u::GBVector, x, I::Union{Vector, UnitRange, StepRange})
+    subassign!(u, x, I; mask, accum, desc)
 end
 
 function GBVector(I::Vector, X::Vector{T}; dup = BinaryOps.PLUS) where {T}
@@ -145,7 +124,7 @@ function GBVector(I::Vector, X::Vector{T}; dup = BinaryOps.PLUS) where {T}
 end
 
 function GBVector(X::Vector)
-    return GBVector([1:length(X)...], X)
+    return GBVector(collect(1:length(X)), X)
 end
 
 function Base.deleteat!(v::GBVector, i)
@@ -158,17 +137,19 @@ function Base.resize!(v::GBVector, nrows_new)
     return v
 end
 
-function diagonal(A::GBMatrix, k = 0, desc = GrB_NULL)
+function diagonal(A::GBMatrix, k = 0, desc = C_NULL)
     return libgb.GxB_Vector_diag(A, k, desc)
 end
 
 function printtest(io::IO, M::GBVector)
-    str = mktemp() do fname, f
+    str = mktemp() do _, f
         cf = Libc.FILE(f)
         libgb.GxB_Vector_fprint(M, "Test", libgb.GxB_SHORT, cf)
         ccall(:fflush, Cint, (Ptr{Cvoid},), cf)
         seek(f, 0)
-        read(f, String)
+        x = read(f, String)
+        close(cf)
+        x
     end
     print(str)
 end

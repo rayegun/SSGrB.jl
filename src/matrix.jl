@@ -73,102 +73,102 @@ for T ∈ valid_vec
         end
     end
 end
-
-function extract!(
-    C::GBMatrix, A::GBMatrix, I, ni, J, nj;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-)
-    if I != ALL
-        if !(I isa Vector)
-            I = libgb.GrB_Index[I]
-        else
-            I = Vector{libgb.GrB_Index}(I)
-        end
+function wlength(A, I, J)
+    if I == ALL
+        Ilen = size(A, 1)
+    else
+        Ilen = length(I)
     end
-    if J != ALL
-        if !(J isa Vector)
-            J = libgb.GrB_Index[J]
-        else
-            J = Vector{libgb.GrB_Index}(J)
-        end
+    if J == ALL
+        Jlen = size(A, 2)
+    else
+        Jlen = length(J)
     end
+    return Ilen, Jlen
+end
+@kwargs function extract!(C::GBMatrix, A::GBMatrix, I, J)
+    I, ni = idx(I)
+    J, nj = idx(J)
     libgb.GrB_Matrix_extract(C, mask, accum, A, I, ni, J, nj, desc)
     return C
 end
 
-function extract(
-    A, I, J, ni = nothing, nj = nothing;
-    mask = C_NULL, accum = C_NULL, desc = C_NULL
-)
-    if I == ALL
-        Ilen = size(A,1)
-        ni = 1
-    elseif ni == libgb.GxB_RANGE && length(I) == 2
-        Ilen = length(I[1]:I[2])
-    elseif ni == libgb.GxB_STRIDE && length(I) == 3
-        Ilen = length(I[1]:I[3]:I[2])
-        I[3] += 1
-    elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
-        Ilen = length(I[1]:I[3]:I[2])
-        I[3] = -I[3] + 1
-    else
-        ni = length(I)
-        Ilen = ni
-    end
-    if J == ALL
-        Jlen = size(A,2)
-        nj = 1
-    elseif nj == libgb.GxB_RANGE && length(J) == 2
-        Jlen = length(J[1]:J[2])
-    elseif nj == libgb.GxB_STRIDE && length(J) == 3
-        Jlen = length(J[1]:J[3]:J[2])
-        J[3] += 1
-    elseif nj == libgb.GxB_BACKWARDS && length(J) == 3
-        Jlen = length(J[1]:J[3]:J[2])
-        J[3] = -J[3] + 1
-    else
-        nj = length(J)
-        Jlen = nj
-    end
+@kwargs function extract(A, I, J)
+    Ilen, Jlen = wlength(A, I, J)
     C = similar(A, Ilen, Jlen)
-    return extract!(C, A, I, ni, J, nj; mask = mask, accum = accum, desc = desc)
+    return extract!(C, A, I, J; mask, accum, desc)
 end
-function Base.getindex(A::GBMatrix, i, j)
-    ni = nothing
-    nj = nothing
-    i isa Colon && (i = ALL)
-    j isa Colon && (j = ALL)
-    if i isa StepRange
-        if i.start <= i.stop && i.step > 0
-            i = [i.start, i.stop, i.step]
-            ni = libgb.GxB_STRIDE
-        elseif i.start >= i.stop && i.step < 0
-            i = [i.start, i.stop, i.step]
-            ni = libgb.GxB_BACKWARDS
+
+@kwargs Base.getindex(A::GBMatrix, ::Colon, j) = extract(A, ALL, j; mask, accum, desc)
+@kwargs Base.getindex(A::GBMatrix, i, ::Colon) = extract(A, i, ALL; mask, accum, desc)
+@kwargs Base.getindex(A::GBMatrix, ::Colon, ::Colon) = extract(A, ALL, ALL; mask, accum, desc)
+
+@kwargs function Base.getindex(
+    A,
+    i::Union{Vector, UnitRange, StepRange},
+    j::Union{Vector, UnitRange, StepRange}
+)
+    return extract(A, i, j; mask, accum, desc)
+end
+
+@kwargs function subassign!(C::GBMatrix, A, I, J)
+    I, ni = idx(I)
+    J, nj = idx(J)
+    A isa Vector && (A = GBVector(A))
+    if A isa GBVector
+        if !(I isa Vector) && (J isa Vector)
+            libgb.GxB_Row_subassign(C, mask, accum, A, I, J, nj, desc)
+        elseif !(J isa Vector) && (I isa Vector)
+            libgb.GxB_Col_subassign(C, mask, accum, A, I, ni, J, desc)
         else
-            throw(BoundsError(u,i))
+            throw(MethodError(subassign!, [C, A, I, J]))
         end
-    elseif i isa UnitRange
-        i.start <= i.stop || throw(BoundsError(u,i))
-        i = [i.start, i.stop]
-        ni = libgb.GxB_RANGE
+    elseif A isa GBMatrix
+        libgb.GxB_Matrix_subassign(C, mask, accum, A, I, ni, J, nj, desc)
+    else
+        libgb.scalarmatsubassign[eltype(A)](C, mask, accum, A, I, ni, J, nj, desc)
     end
-    if j isa StepRange
-        if j.start <= j.stop && j.step > 0
-            j = [j.start, j.stop, j.step]
-            nj = libgb.GxB_STRIDE
-        elseif j.start >= j.stop && j.step < 0
-            j= [j.start, j.stop, j.step]
-            nj = libgb.GxB_BACKWARDS
+end
+
+
+
+@kwargs function assign!(C::GBMatrix, A, I, J)
+    I, ni = idx(I)
+    J, nj = idx(J)
+    A isa Vector && (A = GBVector(A))
+    if A isa GBVector
+        if !(I isa Vector) && (J isa Vector)
+            libgb.GrB_Row_assign(C, mask, accum, A, I, J, nj, desc)
+        elseif !(J isa Vector) && (I isa Vector)
+            libgb.GrB_Col_assign(C, mask, accum, A, I, ni, J, desc)
         else
-            throw(BoundsError(u,j))
+            throw(MethodError(subassign!, [C, A, I, J]))
         end
-    elseif j isa UnitRange
-        j.start <= j.stop || throw(BoundsError(u,j))
-        j = [j.start, j.stop]
-        nj = libgb.GxB_RANGE
+    elseif A isa GBMatrix
+        libgb.GrB_Matrix_assign(C, mask, accum, A, I, ni, J, nj, desc)
+    else
+        libgb.scalarmatassign[eltype(A)](C, mask, accum, A, I, ni, J, nj, desc)
     end
-    return extract(A, i, j, ni, nj)
+end
+
+#setindex! uses subassign rather than assign. This behavior may change in the future.
+@kwargs function Base.setindex!(C::GBMatrix, A, ::Colon, J)
+    subassign!(C, A, ALL, J; mask, accum, desc)
+end
+@kwargs function Base.setindex!(C::GBMatrix, A, I, ::Colon)
+    subassign!(C, A, I, ALL; mask, accum, desc)
+end
+@kwargs function Base.setindex!(C::GBMatrix, A, ::Colon, ::Colon)
+    subassign!(C, A, ALL, ALL; mask, accum, desc)
+end
+
+@kwargs function Base.setindex!(
+    C::GBMatrix,
+    A,
+    I::Union{Vector, UnitRange, StepRange},
+    J::Uion{Vector, UnionRange, StepRange}
+)
+    subassign!(C, A, I, J; mask, accum, desc)
 end
 
 function GBMatrix(

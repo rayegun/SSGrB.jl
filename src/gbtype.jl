@@ -19,7 +19,7 @@ struct GrB_ALL_Type <: Abstract_GrB_Type
 end
 show(io::IO, ::GrB_ALL_Type) = print(io, "GrB_ALL")
 Base.unsafe_convert(::Type{Ptr{libgb.GrB_Index}}, s::GrB_ALL_Type) = s.p
-
+Base.length(::GrB_ALL_Type) = 0 #Wonky workaround to allow indexing with ALL
 function load_globaltypes()
     global ptrtogbtype = Dict{Ptr, Abstract_GrB_Type}()
 
