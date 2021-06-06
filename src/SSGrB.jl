@@ -1,5 +1,4 @@
 module SSGrB
-using Base: Int8
 using Libdl: dlsym
 using SSGraphBLAS_jll
 using SparseArrays

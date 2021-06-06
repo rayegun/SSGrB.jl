@@ -22,6 +22,7 @@ end
 nnz(v::GBVector) = Int64(libgb.GrB_Vector_nvals(v))
 Base.eltype(::Type{GBVector{T}}) where{T} = T
 
+#Similar functions. This definition is kind of clunky, but there were overwrite errors if I did it in another way.
 Base.similar(v::GBVector) = GBVector{eltype(v)}(size(v))
 Base.similar(::GBVector{T}, dims::Integer) where {T} = GBVector{T}(dims)
 Base.similar(v::GBVector, element_type::DataType) = GBVector{element_type}(size(v))
@@ -43,7 +44,7 @@ for T ∈ valid_vec
     end
     func = Symbol(prefix, :_Vector_setElement_, suffix(T))
     @eval begin
-        function Base.setindex!(v::GBVector{$T}, x::$T, i)
+        function Base.setindex!(v::GBVector{$T}, x::$T, i::Integer)
             return libgb.$func(v, x, libgb.GrB_Index(i))
         end
     end
@@ -73,23 +74,52 @@ function extract!(
 end
 
 function extract(u::GBVector, I, ni = nothing; mask = C_NULL, accum = C_NULL, desc = C_NULL)
-    if I == ALL
+    if I == ALL #If we've got ALL, ni does not, and the size of the output is the size of the input.
         wlen = size(u)
         ni = 1
-    elseif ni == libgb.GxB_RANGE && length(I) == 2
+    elseif ni == libgb.GxB_RANGE && length(I) == 2 
         wlen = length(I[1]:I[2])
-    elseif ni == libgb.GxB_STRIDE && length(I) == 3
+    elseif ni == libgb.GxB_STRIDE && length(I) == 3 #SSGrB accepts ranges as [Begin, End, Inc]
         wlen = length(I[1]:I[3]:I[2])
-        I[3] += 1
+        I[3] += 1 #We must be sure the increment remains the same when we go to zero-based
     elseif ni == libgb.GxB_BACKWARDS && length(I) == 3
         wlen = length(I[1]:I[3]:I[2])
-        I[3] = -I[3] + 1
+        #For backwards we need the input incremenet to be positive and fix for zero-based.
+        I[3] = -I[3] + 1 
     else
         ni = length(I)
         wlen = ni
     end
     w = similar(u, wlen)
     return extract!(w, u, I, ni; mask = mask, accum = accum, desc = desc)
+end
+
+function subassign!(w::GBVector, u, I; mask = C_NULL, accum = C_NULL, desc = C_NULL)
+    if I == ALL
+        ni = 1
+    elseif I isa Vector
+        I = Vector{libgb.GrB_Index}(I)
+        ni = length(I)
+    end
+    if u isa Vector
+        libgb.GxB_Vector_subassign(w, mask, accum, u, I, ni, desc)
+    else
+        libgb.scalarvecsubassign[typeof(u)](w, mask, accum, u, I, ni, desc)
+    end
+end
+
+function assign!(w::GBVector, u, I; mask = C_NULL, accum = C_NULL, desc = C_NULL)
+    if I == ALL
+        ni = 1
+    elseif I isa Vector
+        I = Vector{libgb.GrB_Index}(I)
+        ni = length(I)
+    end
+    if u isa Vector
+        libgb.GrB_Vector_assign(w, mask, accum, u, I, ni, desc)
+    else
+        libgb.scalarvecassign[typeof(u)](w, mask, accum, u, I, ni, desc)
+    end
 end
 
 Base.getindex(u::GBVector, ::Colon) = extract(u, ALL)
