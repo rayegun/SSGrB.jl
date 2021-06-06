@@ -202,7 +202,9 @@ function printtest(io::IO, M::GBMatrix)
         libgb.GxB_Matrix_fprint(M, "Test", libgb.GxB_SHORT, cf)
         ccall(:fflush, Cint, (Ptr{Cvoid},), cf)
         seek(f, 0)
-        read(f, String)
+        x = read(f, String)
+        close(cf)
+        x
     end
     print(str)
 end
