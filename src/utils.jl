@@ -119,19 +119,44 @@ function arrrrgh()
     eval(:(Base.show(io::IO, a::Unsigned) = print(io, Int(a))))
 end
 
+#This requires a lot of cleanup. It's clunky, inelegant, and likely error prone.
+#Don't yet know enough about macros/MacroTools to make this nice.
+#First order of business would be reducing the repetition.
+#Second, it would be quite nice to add transpose options here, rather than manually
+#
+#To do this processing needs to be moved outside the quotes.
+#Can the capture statement be shortened?
 macro kwargs(ex)
-    @capture(ex, (f_(xs__; xs2__) = body_) | (function f_(xs__; xs2__) body_ end) |
-    (f_(xs__) = body_) | (function f_(xs__) body_ end))
-    if xs2 !== nothing
-        result = quote
-            function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL)
-                $(esc(body))
+    @capture(ex, (f_(xs__; xs2__) = body_) | (f_(xs__; xs2__) where {T_} = body_) |
+    (function f_(xs__; xs2__) body_ end) | (function f_(xs__; xs2__) where {T_} body_ end) |
+    (f_(xs__) = body_) | (f_(xs__) where {T_} = body_) |
+    (function f_(xs__) body_ end) | (function f_(xs__) where {T_} body_ end))
+    if T === nothing
+        if xs2 !== nothing
+            result = quote
+                function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                    $(esc(body))
+                end
+            end
+        else
+            result = quote
+                function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                    $(esc(body))
+                end
             end
         end
     else
-        result = quote
-            function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL)
-                $(esc(body))
+        if xs2 !== nothing
+            result = quote
+                function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL) where {$(esc(T))}
+                    $(esc(body))
+                end
+            end
+        else
+            result = quote
+                function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL) where {$(esc(T))}
+                    $(esc(body))
+                end
             end
         end
     end

@@ -123,10 +123,16 @@ function GBVector(I::Vector, X::Vector{T}; dup = BinaryOps.PLUS) where {T}
     return x
 end
 
+#TEMPORARY: NEEDS IMPORT/EXPORT
 function GBVector(X::Vector)
-    return GBVector(collect(1:length(X)), X)
+    return GBVector(collect(1:length(X)), X) #Collect... Ouch.
 end
 
+#TEMPORARY: NEEDS IMPORT/EXPORT
+function GBVector(A::SparseVector)
+    i, k = findnz(A)
+    return GBVector(i, k)
+end
 function Base.deleteat!(v::GBVector, i)
     libgb.GrB_Vector_removeElement(v, libgb.GrB_Index(i))
     return v

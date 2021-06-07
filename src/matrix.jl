@@ -14,7 +14,7 @@ clear!(A::GBMatrix) = libgb.GrB_Matrix_clear(A)
 
 function Base.size(A::GBMatrix, dim = nothing)
     if dim === nothing
-        return Int64.(libgb.GrB_Matrix_nrows(A), libgb.GrB_Matrix_ncols(A))
+        return (Int64(libgb.GrB_Matrix_nrows(A)), Int64(libgb.GrB_Matrix_ncols(A)))
     elseif dim == 1
         return Int64(libgb.GrB_Matrix_nrows(A))
     elseif dim == 2
@@ -27,7 +27,7 @@ end
 nnz(A::GBMatrix) = libgb.GrB_Matrix_nvals(A)
 Base.eltype(::Type{GBMatrix{T}}) where{T} = T
 
-Base.similar(A::GBMatrix) = GBMatrix{eltype(A)}(size(A))
+Base.similar(A::GBMatrix) = GBMatrix{eltype(A)}(size(A)...)
 Base.similar(::GBMatrix{T}, dims...) where {T} = GBMatrix{T}(dims...)
 
 for T ∈ valid_vec
@@ -178,6 +178,12 @@ function GBMatrix(
     A = GBMatrix{T}(nrows, ncols)
     build(A, I, J, X, dup = dup)
     return A
+end
+
+#TEMPORARY: NEEDS IMPORT/EXPORT
+function GBMatrix(A::SparseMatrixCSC)
+    i, j, k = findnz(A)
+    return GBMatrix(i, j, k)
 end
 
 function Base.deleteat!(A::GBMatrix, i, j)

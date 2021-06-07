@@ -3,9 +3,12 @@ using Libdl: dlsym
 using SSGraphBLAS_jll
 using SparseArrays
 using MacroTools
-import LinearAlgebra: mul!
-export GBScalar, GBVector, GBMatrix, build, findnz, nnz, libgb, clear, BinaryOps, UnaryOps,
-    Monoids, Semirings, Descriptors, SelectOps
+using LinearAlgebra
+import LinearAlgebra: transpose, Transpose, mul!
+import SparseArrays: nnz, findnz
+export GBScalar, GBVector, GBMatrix, libgb
+export build, findnz, nnz,  clear!, transpose, copy!
+export BinaryOps, UnaryOps, Monoids, Semirings, Descriptors, SelectOps
 
 include("abstracts.jl")
 include("utils.jl")
@@ -35,6 +38,7 @@ include("operations/mul.jl")
 include("operations/elementwise.jl")
 include("operations/apply.jl")
 include("operations/reduce.jl")
+include("operations/transpose.jl")
 function __init__()
     createunaryops()
     createbinaryops()

@@ -61,7 +61,12 @@ function optype(atype, btype)
     #If atype is signed, optype must be signed and at least big enough.
     if atype <: Integer || btype <: Integer
         if atype <: Signed || btype <: Signed
-            return signed(promote_type(atype, btype))
+            p = promote_type(atype, btype)
+            if p isa Integer
+                return signed(p)
+            else
+                return p
+            end
         else
             return promote_type(atype, btype)
         end

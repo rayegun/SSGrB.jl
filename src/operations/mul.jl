@@ -16,7 +16,7 @@ end
 @kwargs function mul!(w::GBVector, A::GBMatrix, u::GBVector, semiring = nothing)
     size(u) == size(A, 2) || throw(DimensionMismatch())
     size(w) == size(A, 1) || throw(DimensionMismatch())
-    semiring = getsemiring(A, B, semiring)
+    semiring = getsemiring(A, u, semiring)
     libgb.GrB_mxv(w, mask, accum, semiring, A, u, desc)
 end
 
