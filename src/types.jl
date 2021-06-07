@@ -92,7 +92,7 @@ function getmonoid(t, monoid = nothing)
 end
 function getmonoid(A::GBVecOrMat, B::GBVecOrMat, monoid = nothing)
     t = optype(eltype(A), eltype(B))
-    return getbinaryop(t, monoid)
+    return getmonoid(t, monoid)
 end
 
 function getoperator(op, t)

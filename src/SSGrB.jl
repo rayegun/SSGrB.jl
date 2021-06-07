@@ -1,10 +1,11 @@
 module SSGrB
+using SSGraphBLAS_jll: libgraphblas_handle
 using Libdl: dlsym
 using SSGraphBLAS_jll
 using SparseArrays
 using MacroTools
 using LinearAlgebra
-import LinearAlgebra: transpose, Transpose, mul!
+import LinearAlgebra: transpose, Transpose, mul!, kron, kron!
 import SparseArrays: nnz, findnz
 export GBScalar, GBVector, GBMatrix, libgb
 export build, findnz, nnz,  clear!, transpose, copy!
@@ -39,6 +40,7 @@ include("operations/elementwise.jl")
 include("operations/apply.jl")
 include("operations/reduce.jl")
 include("operations/transpose.jl")
+include("operations/kronecker.jl")
 function __init__()
     createunaryops()
     createbinaryops()
@@ -53,3 +55,28 @@ function __init__()
     end
 end
 end
+
+
+#TODO before 1.0:
+# 2nd pass over all operations for:
+#   Proper type promotion/optype
+#   Switch defaults from nothing/getoperator to function signature
+# Lazy Transpose for all operations
+# Kron and Select v2, resize
+# Types v2
+#   Positionals
+#   UDTs
+#   Better hierarchy
+# Printing v1 for all types
+# Import/Export of CSC
+# Complete infixes
+# @with macro v1
+# Get/Set for non-descriptors
+# Tests
+# Docs
+# FIX IMPORTS/USINGS/EXPORTS
+
+#TODO for 1.next/2.0:
+# Import/Export every other type
+# Printing v2
+#
