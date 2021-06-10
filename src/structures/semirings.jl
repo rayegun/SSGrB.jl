@@ -2,7 +2,7 @@ baremodule Semirings
     using ..Types
 end
 
-SemiringUnion = Union{Abstract_GrB_Semiring, libgb.GrB_Semiring}
+SemiringUnion = Union{AbstractSemiring, libgb.GrB_Semiring}
 
 function semiringnames(name)
     simple = name[5:end]
@@ -16,7 +16,7 @@ function createsemirings()
     for name ∈ builtins
         containername, exportedname = semiringnames(name)
         structquote = quote
-            struct $containername <: Abstract_GrB_Semiring
+            struct $containername <: AbstractSemiring
                 pointers::Dict{DataType, libgb.GrB_Semiring}
                 name::String
                 $containername() = new(Dict{DataType, libgb.GrB_Semiring}(), $name)
@@ -31,7 +31,7 @@ function createsemirings()
     end
 end
 
-function load(rig::Abstract_GrB_Semiring)
+function load(rig::AbstractSemiring)
     booleans = ["GxB_LOR_FIRST", "GxB_LAND_FIRST", "GxB_LXOR_FIRST", "GxB_EQ_FIRST", "GxB_ANY_FIRST", "GxB_LOR_SECOND", "GxB_LAND_SECOND", "GxB_LXOR_SECOND", "GxB_EQ_SECOND", "GxB_ANY_SECOND", "GxB_LOR_PAIR", "GxB_LAND_PAIR", "GxB_LXOR_PAIR", "GxB_EQ_PAIR", "GxB_ANY_PAIR", "GxB_LOR_LOR", "GxB_LXOR_LOR", "GxB_EQ_LOR", "GxB_ANY_LOR", "GxB_LAND_LAND", "GxB_EQ_LAND", "GxB_ANY_LAND", "GxB_LOR_LXOR", "GxB_LAND_LXOR", "GxB_LXOR_LXOR", "GxB_EQ_LXOR", "GxB_ANY_LXOR", "GxB_LOR_EQ", "GxB_LAND_EQ", "GxB_LXOR_EQ", "GxB_EQ_EQ", "GxB_ANY_EQ", "GxB_LOR_GT", "GxB_LAND_GT", "GxB_LXOR_GT", "GxB_EQ_GT", "GxB_ANY_GT", "GxB_LOR_LT", "GxB_LAND_LT", "GxB_LXOR_LT", "GxB_EQ_LT", "GxB_ANY_LT", "GxB_LOR_GE", "GxB_LAND_GE", "GxB_LXOR_GE", "GxB_EQ_GE", "GxB_ANY_GE", "GxB_LOR_LE", "GxB_LAND_LE", "GxB_LXOR_LE", "GxB_EQ_LE", "GxB_ANY_LE", "GrB_LOR_LAND_SEMIRING", "GrB_LAND_LOR_SEMIRING", "GrB_LXOR_LAND_SEMIRING", "GrB_LXNOR_LOR_SEMIRING"]
 
     integers = ["GxB_PLUS_FIRST", "GxB_TIMES_FIRST", "GxB_ANY_FIRST", "GxB_PLUS_SECOND", "GxB_TIMES_SECOND", "GxB_ANY_SECOND", "GxB_MIN_PAIR", "GxB_MAX_PAIR", "GxB_PLUS_PAIR", "GxB_TIMES_PAIR", "GxB_ANY_PAIR", "GxB_MIN_MIN", "GxB_TIMES_MIN", "GxB_ANY_MIN", "GxB_MAX_MAX", "GxB_PLUS_MAX", "GxB_TIMES_MAX", "GxB_ANY_MAX", "GxB_PLUS_PLUS", "GxB_TIMES_PLUS", "GxB_ANY_PLUS", "GxB_MIN_MINUS", "GxB_MAX_MINUS", "GxB_PLUS_MINUS", "GxB_TIMES_MINUS", "GxB_ANY_MINUS", "GxB_TIMES_TIMES", "GxB_ANY_TIMES", "GxB_MIN_DIV", "GxB_MAX_DIV", "GxB_PLUS_DIV", "GxB_TIMES_DIV", "GxB_ANY_DIV", "GxB_MIN_RDIV", "GxB_MAX_RDIV", "GxB_PLUS_RDIV", "GxB_TIMES_RDIV", "GxB_ANY_RDIV", "GxB_MIN_RMINUS", "GxB_MAX_RMINUS", "GxB_PLUS_RMINUS", "GxB_TIMES_RMINUS", "GxB_ANY_RMINUS", "GxB_MIN_ISEQ", "GxB_MAX_ISEQ", "GxB_PLUS_ISEQ", "GxB_TIMES_ISEQ", "GxB_ANY_ISEQ", "GxB_MIN_ISNE", "GxB_MAX_ISNE", "GxB_PLUS_ISNE", "GxB_TIMES_ISNE", "GxB_ANY_ISNE", "GxB_MIN_ISGT", "GxB_MAX_ISGT", "GxB_PLUS_ISGT", "GxB_TIMES_ISGT", "GxB_ANY_ISGT", "GxB_MIN_ISLT", "GxB_MAX_ISLT", "GxB_PLUS_ISLT", "GxB_TIMES_ISLT", "GxB_ANY_ISLT", "GxB_MIN_ISGE", "GxB_MAX_ISGE", "GxB_PLUS_ISGE", "GxB_TIMES_ISGE", "GxB_ANY_ISGE", "GxB_MIN_ISLE", "GxB_MAX_ISLE", "GxB_PLUS_ISLE", "GxB_TIMES_ISLE", "GxB_ANY_ISLE", "GxB_MIN_LOR", "GxB_MAX_LOR", "GxB_PLUS_LOR", "GxB_TIMES_LOR", "GxB_ANY_LOR", "GxB_MIN_LAND", "GxB_MAX_LAND", "GxB_PLUS_LAND", "GxB_TIMES_LAND", "GxB_ANY_LAND", "GxB_MIN_LXOR", "GxB_MAX_LXOR", "GxB_PLUS_LXOR", "GxB_TIMES_LXOR", "GxB_ANY_LXOR", "GxB_LOR_NE", "GxB_LOR_EQ", "GxB_LAND_EQ", "GxB_LXOR_EQ", "GxB_EQ_EQ", "GxB_ANY_EQ", "GxB_LAND_NE", "GxB_LXOR_NE", "GxB_EQ_NE", "GxB_ANY_NE", "GxB_LOR_GT", "GxB_LAND_GT", "GxB_LXOR_GT", "GxB_EQ_GT", "GxB_ANY_GT", "GxB_LOR_LT", "GxB_LAND_LT", "GxB_LXOR_LT", "GxB_EQ_LT", "GxB_ANY_LT", "GxB_LOR_GE", "GxB_LAND_GE", "GxB_LXOR_GE", "GxB_EQ_GE", "GxB_ANY_GE", "GxB_LOR_LE", "GxB_LAND_LE", "GxB_LXOR_LE", "GxB_EQ_LE", "GxB_ANY_LE", "GrB_PLUS_TIMES_SEMIRING", "GrB_PLUS_MIN_SEMIRING", "GrB_MIN_PLUS_SEMIRING", "GrB_MIN_TIMES_SEMIRING", "GrB_MIN_FIRST_SEMIRING", "GrB_MIN_SECOND_SEMIRING", "GrB_MIN_MAX_SEMIRING", "GrB_MAX_PLUS_SEMIRING", "GrB_MAX_TIMES_SEMIRING", "GrB_MAX_FIRST_SEMIRING", "GrB_MAX_SECOND_SEMIRING", "GrB_MAX_MIN_SEMIRING"]
@@ -66,8 +66,9 @@ function load(rig::Abstract_GrB_Semiring)
     end
 end
 
-multiplyop(rig::SemiringUnion) = libgb.GxB_Semiring_multiply(rig)
-addop(rig::SemiringUnion) = libgb.GxB_Semiring_add(rig)
+
+multiplyop(rig::libgb.GrB_Semiring) = libgb.GxB_Semiring_multiply(rig)
+addop(rig::libgb.GrB_Semiring) = libgb.GxB_Semiring_add(rig)
 
 xtype(rig::SemiringUnion) = xtype(addop(rig))
 ytype(rig::SemiringUnion) = ytype(addop(rig))

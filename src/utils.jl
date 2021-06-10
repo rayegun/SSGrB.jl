@@ -134,13 +134,15 @@ macro kwargs(ex)
     if T === nothing
         if xs2 !== nothing
             result = quote
-                function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                function $(esc(f))($(map(esc, xs)...);
+                    $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = Descriptors.NULL)
                     $(esc(body))
                 end
             end
         else
             result = quote
-                function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL)
+                function $(esc(f))($(map(esc, xs)...);
+                    mask = C_NULL, accum = C_NULL, desc = Descriptors.NULL)
                     $(esc(body))
                 end
             end
@@ -148,13 +150,15 @@ macro kwargs(ex)
     else
         if xs2 !== nothing
             result = quote
-                function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...), mask = C_NULL, accum = C_NULL, desc = C_NULL) where {$(esc(T))}
+                function $(esc(f))($(map(esc, xs)...); $(map(esc, xs2)...);
+                    mask = C_NULL, accum = C_NULL, desc = Descriptors.NULL) where {$(esc(T))}
                     $(esc(body))
                 end
             end
         else
             result = quote
-                function $(esc(f))($(map(esc, xs)...); mask = C_NULL, accum = C_NULL, desc = C_NULL) where {$(esc(T))}
+                function $(esc(f))($(map(esc, xs)...);
+                    mask = C_NULL, accum = C_NULL, desc = Descriptors.NULL) where {$(esc(T))}
                     $(esc(body))
                 end
             end

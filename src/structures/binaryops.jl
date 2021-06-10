@@ -2,7 +2,7 @@ baremodule BinaryOps
     using ..Types
 end
 
-BinaryUnion = Union{Abstract_GrB_BinaryOp, libgb.GrB_BinaryOp}
+BinaryUnion = Union{AbstractBinaryOp, libgb.GrB_BinaryOp}
 
 function binarynames(name)
     simple = splitconstant(name)[2]
@@ -15,7 +15,7 @@ function createbinaryops()
     for name ∈ builtins
         containername, exportedname = binarynames(name)
         structquote = quote
-            struct $containername <: Abstract_GrB_BinaryOp
+            struct $containername <: AbstractBinaryOp
                 pointers::Dict{DataType, libgb.GrB_BinaryOp}
                 name::String
                 $containername() = new(Dict{DataType, libgb.GrB_BinaryOp}(), $name)
@@ -29,7 +29,7 @@ function createbinaryops()
         @eval(BinaryOps,$constquote)
     end
 end
-function load(binary::Abstract_GrB_BinaryOp)
+function load(binary::AbstractBinaryOp)
     booleans = ["GrB_FIRST", "GrB_SECOND", "GxB_POW", "GrB_PLUS", "GrB_MINUS", "GrB_TIMES", "GrB_DIV", "GxB_RMINUS", "GxB_RDIV", "GxB_PAIR", "GxB_ANY", "GxB_ISEQ", "GxB_ISNE", "GxB_ISGT", "GxB_ISLT", "GxB_ISGE", "GxB_ISLE", "GrB_MIN", "GrB_MAX", "GxB_LOR", "GxB_LAND", "GxB_LXOR", "GrB_EQ", "GrB_NE", "GrB_GT", "GrB_LT", "GrB_GE", "GrB_LE"]
     integers = ["GrB_FIRST", "GrB_SECOND", "GxB_POW", "GrB_PLUS", "GrB_MINUS", "GrB_TIMES", "GrB_DIV", "GxB_RMINUS", "GxB_RDIV", "GxB_PAIR", "GxB_ANY", "GxB_ISEQ", "GxB_ISNE", "GxB_ISGT", "GxB_ISLT", "GxB_ISGE", "GxB_ISLE", "GrB_MIN", "GrB_MAX", "GxB_LOR", "GxB_LAND", "GxB_LXOR", "GrB_BOR", "GrB_BAND", "GrB_BXOR", "GrB_BXNOR", "GxB_BGET", "GxB_BSET", "GxB_BCLR", "GxB_BSHIFT", "GrB_EQ", "GrB_NE", "GrB_GT", "GrB_LT", "GrB_GE", "GrB_LE"]
     unsignedintegers = ["GrB_FIRST", "GrB_SECOND", "GxB_POW", "GrB_PLUS", "GrB_MINUS", "GrB_TIMES", "GrB_DIV", "GxB_RMINUS", "GxB_RDIV", "GxB_PAIR", "GxB_ANY", "GxB_ISEQ", "GxB_ISNE", "GxB_ISGT", "GxB_ISLT", "GxB_ISGE", "GxB_ISLE", "GrB_MIN", "GrB_MAX", "GxB_LOR", "GxB_LAND", "GxB_LXOR", "GrB_BOR", "GrB_BAND", "GrB_BXOR", "GrB_BXNOR", "GxB_BGET", "GxB_BSET", "GxB_BCLR", "GxB_BSHIFT", "GrB_EQ", "GrB_NE", "GrB_GT", "GrB_LT", "GrB_GE", "GrB_LE"]

@@ -14,6 +14,6 @@ function idx(I)
     elseif I isa Vector
         return Vector{libgb.GrB_Index}(I), length(I) #Assume ni = length(I) otherwise
     elseif I isa Integer
-        return I, 0
+        return UInt64(I), 0
     end
 end

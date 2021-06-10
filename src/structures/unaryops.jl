@@ -2,7 +2,7 @@ baremodule UnaryOps
     using ..Types
 end
 
-UnaryUnion = Union{Abstract_GrB_UnaryOp, libgb.GrB_UnaryOp}
+UnaryUnion = Union{AbstractUnaryOp, libgb.GrB_UnaryOp}
 
 function unarynames(name)
     simple = splitconstant(name)[2]
@@ -16,7 +16,7 @@ function createunaryops()
     for name ∈ builtins
         containername, exportedname = unarynames(name)
         structquote = quote
-            struct $containername <: Abstract_GrB_UnaryOp
+            struct $containername <: AbstractUnaryOp
                 pointers::Dict{DataType, libgb.GrB_UnaryOp}
                 name::String
                 $containername() = new(Dict{DataType, libgb.GrB_UnaryOp}(), $name)
@@ -31,7 +31,7 @@ function createunaryops()
     end
 end
 
-function load(unaryop::Abstract_GrB_UnaryOp)
+function load(unaryop::AbstractUnaryOp)
     booleans = ["GrB_IDENTITY", "GrB_AINV", "GrB_MINV", "GxB_LNOT", "GxB_ONE", "GrB_ABS"]
     integers = ["GrB_IDENTITY", "GrB_AINV", "GrB_MINV", "GxB_LNOT", "GxB_ONE", "GrB_ABS", "GrB_BNOT"]
     unsignedintegers = ["GrB_IDENTITY", "GrB_AINV", "GrB_MINV", "GxB_LNOT", "GxB_ONE", "GrB_ABS", "GrB_BNOT"]

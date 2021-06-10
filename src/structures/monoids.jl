@@ -1,7 +1,7 @@
 baremodule Monoids
     using ..Types
 end
-MonoidUnion = Union{Abstract_GrB_Monoid, libgb.GrB_Monoid}
+MonoidUnion = Union{AbstractMonoid, libgb.GrB_Monoid}
 function monoidnames(name)
     simple = splitconstant(name)[2]
     containername = Symbol(simple, "_MONOID_T")
@@ -13,7 +13,7 @@ function createmonoids()
     for name ∈ builtins
         containername, exportedname = monoidnames(name)
         structquote = quote
-            struct $containername <: Abstract_GrB_Monoid
+            struct $containername <: AbstractMonoid
                 pointers::Dict{DataType, libgb.GrB_Monoid}
                 name::String
                 $containername() = new(Dict{DataType, libgb.GrB_Monoid}(), $name)
@@ -28,7 +28,7 @@ function createmonoids()
     end
 end
 
-function load(monoid::Abstract_GrB_Monoid)
+function load(monoid::AbstractMonoid)
     booleans = ["GxB_ANY", "GrB_LOR", "GrB_LAND", "GrB_LXOR", "GrB_LXNOR", "GxB_EQ"]
     integers = ["GrB_MIN", "GrB_MAX", "GrB_PLUS", "GrB_TIMES", "GxB_ANY"]
     unsignedintegers = ["GrB_MIN", "GrB_MAX", "GrB_PLUS", "GrB_TIMES", "GxB_ANY", "GxB_BOR", "GxB_BAND", "GxB_BXOR", "GxB_BXNOR"]

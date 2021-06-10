@@ -1,27 +1,22 @@
 
 abstract type Abstract_GrB_Struct end
 abstract type Abstract_GrB_Type <: Abstract_GrB_Struct end
-abstract type Abstract_GrB_Descriptor <: Abstract_GrB_Struct end
-abstract type Abstract_GrB_Op end
-abstract type Abstract_GrB_UnaryOp <: Abstract_GrB_Op end
-abstract type Abstract_GrB_BinaryOp <: Abstract_GrB_Op end
-abstract type Abstract_GrB_SelectOp <: Abstract_GrB_Op end
-abstract type Abstract_GrB_Monoid <: Abstract_GrB_Op end
-abstract type Abstract_GrB_Semiring <: Abstract_GrB_Op end
+abstract type AbstractDescriptor <: Abstract_GrB_Struct end
+abstract type AbstractOp end
+abstract type AbstractUnaryOp <: AbstractOp end
+abstract type AbstractBinaryOp <: AbstractOp end
+abstract type AbstractSelectOp <: AbstractOp end
+abstract type AbstractMonoid <: AbstractOp end
+abstract type AbstractSemiring <: AbstractOp end
 
-abstract type Abstract_Semiring_Container <: Abstract_GrB_Semiring end
-abstract type Abstract_UnaryOp_Container <: Abstract_GrB_UnaryOp end
-abstract type Abstract_BinaryOp_Container <: Abstract_GrB_BinaryOp end
-abstract type Abstract_Monoid_Container <: Abstract_GrB_Monoid end
+isloaded(o::AbstractOp) = !isempty(o.pointers)
 
-isloaded(o::Abstract_GrB_Op) = !isempty(o.pointers)
-
-function validtypes(o::Abstract_GrB_Op)
+function validtypes(o::AbstractOp)
     isloaded(o) || load(o)
     return keys(o.pointers)
 end
 
-function Base.getindex(o::Abstract_GrB_Op, t::DataType)
+function Base.getindex(o::AbstractOp, t::DataType)
     isloaded(o) || load(o)
     getindex(o.pointers, t)
 end

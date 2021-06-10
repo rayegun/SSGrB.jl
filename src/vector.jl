@@ -160,6 +160,10 @@ function printtest(io::IO, M::GBVector)
     print(str)
 end
 
-function Base.show(io::IO, M::GBVector)
-    printtest(io, M)
+function Base.show(io::IO, ::MIME"text/plain", v::GBVector)
+    printtest(io, v)
+end
+
+function Base.print(io::IO, v::GBVector)
+    printtest(io, v)
 end

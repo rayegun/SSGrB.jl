@@ -5,8 +5,8 @@ using SSGraphBLAS_jll
 using SparseArrays
 using MacroTools
 using LinearAlgebra
+using Random: randsubseq, default_rng, AbstractRNG
 import LinearAlgebra: transpose, Transpose, mul!, kron, kron!
-import SparseArrays: nnz, findnz
 export GBScalar, GBVector, GBMatrix, libgb
 export build, findnz, nnz,  clear!, transpose, copy!
 export BinaryOps, UnaryOps, Monoids, Semirings, Descriptors, SelectOps
@@ -20,27 +20,31 @@ include("types.jl")
 using .Types
 
 include("gbtype.jl")
-include("monoids.jl")
+include("structures/monoids.jl")
 using .Monoids
-include("binaryops.jl")
+include("structures/binaryops.jl")
 using .BinaryOps
-include("unaryops.jl")
+include("structures/unaryops.jl")
 using .UnaryOps
-include("semirings.jl")
+include("structures/semirings.jl")
 using .Semirings
-include("selectops.jl")
+include("structures/selectops.jl")
 using .SelectOps
 include("indexutils.jl")
 include("scalar.jl")
 include("vector.jl")
 include("matrix.jl")
-include("descriptor.jl")
+include("structures/descriptor.jl")
 include("operations/mul.jl")
 include("operations/elementwise.jl")
 include("operations/apply.jl")
 include("operations/reduce.jl")
 include("operations/transpose.jl")
 include("operations/kronecker.jl")
+include("operations/select.jl")
+include("rand.jl")
+include("import.jl")
+include("export.jl")
 function __init__()
     createunaryops()
     createbinaryops()
@@ -49,7 +53,11 @@ function __init__()
     load_globaltypes()
     loadselectops()
     loaddescriptors()
-    libgb.GxB_init(libgb.GrB_BLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
+    #I don't need these cglobals for the import/export? That's surprising...?
+    # Using them gives me a segfault on garbage collection.
+    #libgb.GxB_init(libgb.GrB_BLOCKING, cglobal(:jl_malloc), cglobal(:jl_calloc), cglobal(:jl_realloc), cglobal(:jl_free), true)
+    libgb.GrB_init(libgb.GrB_NONBLOCKING)
+    @eval(Descriptors, $:(const NULL = Descriptor()))
     atexit() do
         libgb.GrB_finalize()
     end
@@ -57,19 +65,15 @@ end
 end
 
 
-#TODO before 1.0:
-# 2nd pass over all operations for:
-#   Proper type promotion/optype
-#   Switch defaults from nothing/getoperator to function signature
-# Lazy Transpose for all operations
-# Kron and Select v2, resize
+#TODO:
+# resize
+# Infixes
 # Types v2
 #   Positionals
 #   UDTs
 #   Better hierarchy
 # Printing v1 for all types
-# Import/Export of CSC
-# Complete infixes
+# Export of CSC/Dense
 # @with macro v1
 # Get/Set for non-descriptors
 # Tests
@@ -79,4 +83,3 @@ end
 #TODO for 1.next/2.0:
 # Import/Export every other type
 # Printing v2
-#

@@ -1,6 +1,4 @@
-
-
-mutable struct Descriptor <: Abstract_GrB_Descriptor
+mutable struct Descriptor <: AbstractDescriptor
     p::libgb.GrB_Descriptor
     function Descriptor(p::libgb.GrB_Descriptor)
         d = new(p)
@@ -70,19 +68,33 @@ end
 function Base.:+(d1::Descriptor, d2::Descriptor)
     d = Descriptor()
     for f ∈ propertynames(d)
-        if getproperty(d1, f) != libgb.GxB_DEFAULT
-            setproperty!(d, f, getproperty(d1, f))
-        end
-        if getproperty(d2, f) != libgb.GxB_DEFAULT
-            setproperty!(d, f, getproperty(d2, f))
+        if f == :input1
+            if getproperty(d1, f) == Descriptors.TRANSPOSE && getproperty(d2, f) == Descriptors.TRANSPOSE
+                setproperty!(d, f, Descriptors.DEFAULT)
+            elseif getproperty(d1, f) == Descriptors.TRANSPOSE || getproperty(d2, f) == Descriptors.TRANSPOSE
+                setproperty!(d, f, Descriptors.TRANSPOSE)
+            end
+        elseif f == :input2
+            if getproperty(d1, f) == Descriptors.TRANSPOSE && getproperty(d2, f) == Descriptors.TRANSPOSE
+                setproperty!(d, f, Descriptors.DEFAULT)
+            elseif getproperty(d1, f) == Descriptors.TRANSPOSE || getproperty(d2, f) == Descriptors.TRANSPOSE
+                setproperty!(d, f, Descriptors.TRANSPOSE)
+            end
+        else
+            if getproperty(d1, f) != Descriptors.DEFAULT
+                setproperty!(d, f, getproperty(d1, f))
+            end
+            if getproperty(d2, f) != Descriptors.DEFAULT
+                setproperty!(d, f, getproperty(d2, f))
+            end
         end
     end
     return d
 end
 
 #This is probably not ideal. Perhaps kwargs = nothing by default is better
-Base.:+(d1::Descriptor, ::Ptr{Nothing}) = d1
-Base.:+(::Ptr{Nothing}, d2::Descriptor) = d2
+Base.:+(d1::Descriptor, ::Nothing) = d1
+Base.:+(::Nothing, d2::Descriptor) = d2
 
 function Base.propertynames(d::Descriptor)
     return (
@@ -98,7 +110,9 @@ function Base.propertynames(d::Descriptor)
 end
 baremodule Descriptors
 import ..SSGrB: load_global, Descriptor
-import ..libgb: GB_Descriptor_opaque,
+import ..libgb:
+GB_Descriptor_opaque,
+GrB_Descriptor,
 GxB_DEFAULT,
 GrB_REPLACE,
 GrB_COMP,
@@ -111,6 +125,7 @@ GxB_AxB_DOT,
 GxB_AxB_HASH,
 GxB_AxB_SAXPY
 import ..Types
+import Base.C_NULL
 
 const DEFAULT = GxB_DEFAULT
 const REPLACE = GrB_REPLACE
@@ -121,7 +136,6 @@ const GUSTAVSON = GxB_AxB_GUSTAVSON
 const DOT = GxB_AxB_DOT
 const HASH = GxB_AxB_HASH
 const SAXPY = GxB_AxB_SAXPY
-
 end
 
 function loaddescriptors()
@@ -163,8 +177,9 @@ function loaddescriptors()
         end
         @eval(Descriptors, $constquote)
     end
+
 end
-isloaded(d::Abstract_GrB_Descriptor) = d.p !== C_NULL
+isloaded(d::AbstractDescriptor) = d.p !== C_NULL
 
 function printtest(::IO, M::Descriptor)
     str = mktemp() do _, f

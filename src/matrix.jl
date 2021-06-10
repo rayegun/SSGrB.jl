@@ -2,6 +2,7 @@ function GBMatrix{T}(nrows, ncols) where {T}
     return GBMatrix{T}(libgb.GrB_Matrix_new(toGrB_Type(T), nrows, ncols))
 end
 
+GBMatrix{T}(dims::Tuple{<:Integer, <:Integer}) where {T} = GBMatrix{T}(dims...)
 GBMatrix{T}() where {T} = GBMatrix{T}(libgb.GxB_INDEX_MAX, libgb.GxB_INDEX_MAX)
 
 Base.unsafe_convert(::Type{libgb.GrB_Matrix}, A::GBMatrix) = A.p
@@ -24,11 +25,18 @@ function Base.size(A::GBMatrix, dim = nothing)
     end
 end
 
+function Base.similar(A::GBMatrix{T}, ::Type{TNew}) where {T, TNew}
+    return GBMatrix{TNew}(size(A, 1), size(A, 2))
+end
+function Base.similar(
+    ::GBMatrix{T}, ::Type{TNew},
+    dims::Union{Dims{1}, Dims{2}}
+) where {T, TNew}
+    return GBMatrix{TNew}(dims...)
+end
+
 nnz(A::GBMatrix) = libgb.GrB_Matrix_nvals(A)
 Base.eltype(::Type{GBMatrix{T}}) where{T} = T
-
-Base.similar(A::GBMatrix) = GBMatrix{eltype(A)}(size(A)...)
-Base.similar(::GBMatrix{T}, dims...) where {T} = GBMatrix{T}(dims...)
 
 for T ∈ valid_vec
     if T ∈ GxB_vec
@@ -179,6 +187,7 @@ function GBMatrix(
     build(A, I, J, X, dup = dup)
     return A
 end
+
 
 #TEMPORARY: NEEDS IMPORT/EXPORT
 function GBMatrix(A::SparseMatrixCSC)

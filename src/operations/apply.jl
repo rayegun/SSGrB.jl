@@ -1,4 +1,7 @@
-@kwargs function apply!(C::GBVecOrMat, A::GBVecOrMat, op::Abstract_GrB_UnaryOp)
+#NOTES:
+#   Transposes give a GrB_DIMENSION_MISMATCH. So we do not provide a GBMatOrTrans arg.
+
+@kwargs function apply!(C::GBVecOrMat, A::GBVecOrMat, op::UnaryUnion)
     op = getoperator(op, eltype(C))
     if C isa GBVector && A isa GBVector
         libgb.GrB_Vector_apply(C, mask, accum, op, A, desc)
@@ -6,14 +9,14 @@
         libgb.GrB_Matrix_apply(C, mask, accum, op, A, desc)
     end
 end
-@kwargs apply!(A::GBVecOrMat, op::Abstract_GrB_UnaryOp) = apply!(A, A, op; mask, accum, desc)
-@kwargs function apply(A::GBVecOrMat, op::Abstract_GrB_UnaryOp)
+@kwargs apply!(A::GBVecOrMat, op::UnaryUnion) = apply!(A, A, op; mask, accum, desc)
+@kwargs function apply(A::GBVecOrMat, op::UnaryUnion)
     C = similar(A)
     apply!(C, A, op; mask, accum, desc)
-    return w
+    return C
 end
 
-@kwargs function apply!(C::GBVecOrMat, x, A::GBVecOrMat, op::Abstract_GrB_BinaryOp)
+@kwargs function apply!(C::GBVecOrMat, x, A::GBVecOrMat, op::BinaryUnion)
     op = getoperator(op, eltype(C))
     if C isa GBVector && A isa GBVector
         libgb.scalarvecapply1st[eltype(C)](C, mask, accum, op, x, A, desc)
@@ -22,17 +25,17 @@ end
     end
 end
 
-@kwargs function apply!(x, A::GBVecOrMat, op::Abstract_GrB_BinaryOp)
+@kwargs function apply!(x, A::GBVecOrMat, op::BinaryUnion)
     apply!(A, x, A, op; mask, accum, desc)
 end
 
-@kwargs function apply(x, A::GBVecOrMat, op::Abstract_GrB_BinaryOp)
+@kwargs function apply(x, A::GBVecOrMat, op::BinaryUnion)
     C = similar(A)
     apply!(C, x, A, op; mask, accum, desc)
     return C
 end
 
-@kwargs function apply!(C::GBVecOrMat, A::GBVecOrMat, x, op::Abstract_GrB_BinaryOp)
+@kwargs function apply!(C::GBVecOrMat, A::GBVecOrMat, x, op::BinaryUnion)
     op = getoperator(op, eltype(C))
     if C isa GBVector && A isa GBVector
         libgb.scalarvecapply2nd[eltype(C)](C, mask, accum, op, A, x, desc)
@@ -41,11 +44,11 @@ end
     end
 end
 
-@kwargs function apply!(A::GBVecOrMat, x, op::Abstract_GrB_BinaryOp)
+@kwargs function apply!(A::GBVecOrMat, x, op::BinaryUnion)
     apply!(A, A, x, op; mask, accum, desc)
 end
 
-@kwargs function apply(A::GBVecOrMat, x, op::Abstract_GrB_BinaryOp)
+@kwargs function apply(A::GBVecOrMat, x, op::BinaryUnion)
     C = similar(A)
     apply!(C, A, x, op; mask, accum, desc)
     return C
